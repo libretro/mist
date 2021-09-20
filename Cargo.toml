@@ -1,6 +1,5 @@
 [workspace]
 members = [
-    "mist-common",
-    "mist-library",
-    "mist-process"
+    "mist",
+    "steamworks-sys"
 ]

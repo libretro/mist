@@ -1,0 +1,20 @@
+[package]
+name = "mist"
+version = "0.1.0"
+edition = "2018"
+
+[dependencies]
+steamworks-sys = { path = "../steamworks-sys", optional = true } # Only include steamworks for the binary
+
+[features]
+steamworks = ["steamworks-sys"]
+
+[lib]
+name = "mist"
+path = "src/lib.rs"
+crate-type = ["cdylib"] # Generate a c-abi compatible lib
+
+[[bin]]
+name = "mist"
+path = "src/main.rs"
+required-features = ["steamworks"]
