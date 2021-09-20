@@ -1,6 +1,6 @@
 // Service calls for the subprocess
 mist_service!(
-    // Rich presence
+    // Friends
     fn clear_rich_presence();
     fn set_rich_presence(key: String, value: Option<String>) -> bool;
     // Utils

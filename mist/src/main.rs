@@ -1,12 +1,12 @@
-use std::ffi::CString;
+use std::{ffi::CString, time::Duration};
 
-mod consts;
 #[macro_use]
-mod macros;
+mod codegen;
+mod consts;
 mod service;
 
 use consts::PROCESS_INIT_SECRET;
-use service::{MistServer, MistService};
+use service::{MistServer, MistService, MistServiceToLibrary};
 
 fn main() {
     // Keep users away
@@ -32,32 +32,41 @@ fn main() {
 
     if let Err(_err) = run() {}
 
-    // Shutdown the steam api
-    unsafe { steamworks_sys::SteamAPI_Shutdown() };
-
     std::process::exit(0);
 }
 
 fn run() -> Result<(), String> {
     // Setup the service context which is avaliable to all the service calls
     let service = MistServerService {
+        steam_pipe: unsafe { steamworks_sys::SteamAPI_GetHSteamPipe() },
         steam_friends: unsafe { steamworks_sys::SteamAPI_SteamFriends_v017() },
         steam_utils: unsafe { steamworks_sys::SteamAPI_SteamUtils_v010() },
     };
 
     // Create the server using stdin/stdout as transport for IPC
-    let server = MistServer::create(service, std::io::stdin(), std::io::stdout());
+    let mut server = MistServer::create(service, std::io::stdin(), std::io::stdout());
+    // Tell the library that we have initialized
+    server.write_data(&MistServiceToLibrary::Initialized);
 
-    Ok(())
+    loop {
+        // Poll for messages from the library until 50ms timeout is reached
+        server.recv_timeout(Duration::from_millis(50));
+
+        // Run the frame
+        unsafe {
+            steamworks_sys::SteamAPI_ManualDispatch_RunFrame(server.service().steam_pipe);
+        }
+    }
 }
 
 pub struct MistServerService {
+    steam_pipe: steamworks_sys::HSteamPipe,
     steam_friends: *mut steamworks_sys::ISteamFriends,
     steam_utils: *mut steamworks_sys::ISteamUtils,
 }
 
 impl MistService for MistServerService {
-    // Rich presence
+    // Friends
     fn clear_rich_presence(&mut self) {
         unsafe {
             steamworks_sys::SteamAPI_ISteamFriends_ClearRichPresence(self.steam_friends);
@@ -65,24 +74,18 @@ impl MistService for MistServerService {
     }
     fn set_rich_presence(&mut self, key: String, value: Option<String>) -> bool {
         // Turn the string into a c null terminated string
-        let c_key = match CString::new(key) {
-            Ok(cstr) => cstr,
-            Err(_) => return false, // The string contains a null character which is illegal
-        };
-
+        let c_key = CString::new(key).unwrap_or_default();
         // value can be None (NULL) to clear it
-        let c_value = match value.map(|v| CString::new(v)) {
-            Some(Ok(cstr)) => Some(cstr),
-            Some(Err(_)) => return false, // The string contains a null character which is illegal
-            None => None,
-        };
+        let c_value = value.map(|val| CString::new(val).ok()).flatten();
 
         unsafe {
             steamworks_sys::SteamAPI_ISteamFriends_SetRichPresence(
                 self.steam_friends,
-                c_key.as_ptr(),
+                c_key.as_ptr() as *const _,
                 // Get the ptr to the str if it has a value, otherwise return null
-                c_value.map(|v| v.as_ptr()).unwrap_or(std::ptr::null()),
+                c_value
+                    .map(|v| v.into_raw() as *const _)
+                    .unwrap_or(std::ptr::null()),
             )
         }
     }
@@ -92,5 +95,12 @@ impl MistService for MistServerService {
     }
     fn is_steam_running_on_steam_deck(&mut self) -> bool {
         unsafe { steamworks_sys::SteamAPI_ISteamUtils_IsSteamRunningOnSteamDeck(self.steam_utils) }
+    }
+}
+
+impl Drop for MistServerService {
+    fn drop(&mut self) {
+        // Shutdown the steam api
+        unsafe { steamworks_sys::SteamAPI_Shutdown() };
     }
 }
