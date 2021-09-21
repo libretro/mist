@@ -1,5 +1,6 @@
 [workspace]
 members = [
     "mist",
-    "steamworks-sys"
+    "steamworks-sys",
+    "tools/app_install_dir" # Workaround for linux
 ]
