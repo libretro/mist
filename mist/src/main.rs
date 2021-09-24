@@ -51,7 +51,10 @@ fn run() -> Result<()> {
     let mut server = MistServer::create(service, std::io::stdin(), std::io::stdout());
     // Tell the library that we have initialized
     if let Err(err) = server.write_data(&MistServiceToLibrary::Initialized) {
-        eprintln!("[mist] Error writing intialized message to library: {}", err);
+        eprintln!(
+            "[mist] Error writing intialized message to library: {}",
+            err
+        );
         std::process::exit(1);
     }
 

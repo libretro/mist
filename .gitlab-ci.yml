@@ -1,0 +1,73 @@
+stages:
+ - build
+ - package
+
+image: $CI_SERVER_HOST:5050/libretro-steam/rust-build-image:latest
+
+.build-common:
+  stage: build
+  needs:
+    - project: libretro-steam/steamworks
+      job: package
+      ref: master
+      artifacts: true
+  script: &build_common_script
+    - STEAMWORKS_SDK="$(pwd)/steamworks" cargo build --release --target=$RUST_TARGET --bin mist --features=steamworks
+    - cargo build --release --target=$RUST_TARGET --lib --package mist
+
+build-linux-x64:
+  extends: .build-common
+  artifacts:
+    paths:
+    - mist-linux-x64
+    expire_in: 1 hour
+  variables:
+    RUST_TARGET: x86_64-unknown-linux-gnu
+  script:
+    - *build_common_script
+    - STEAMWORKS_SDK="$(pwd)/steamworks" cargo build --release --target=$RUST_TARGET --bin app_install_dir
+    - mkdir -p mist-linux-x64/mist
+    - cp ./target/$RUST_TARGET/release/libmist.so ./mist-linux-x64
+    - cp ./target/$RUST_TARGET/release/mist ./mist-linux-x64/mist
+    - cp ./target/$RUST_TARGET/release/app_install_dir ./mist-linux-x64/mist
+    - cp ./steamworks/redistributable_bin/linux64/libsteam_api.so ./mist-linux-x64/mist
+
+build-windows-x64:
+  extends: .build-common
+  artifacts:
+    paths:
+    - mist-windows-x64
+    expire_in: 1 hour
+  variables:
+    RUST_TARGET: x86_64-pc-windows-gnu
+  script:
+    - *build_common_script
+    - mkdir -p ./mist-windows-x64/mist
+    - cp ./target/$RUST_TARGET/release/mist.dll ./mist-windows-x64
+    - cp ./target/$RUST_TARGET/release/mist.exe ./mist-windows-x64/mist
+    - cp ./steamworks/redistributable_bin/win64/steam_api64.dll ./mist-windows-x64/mist
+
+package:
+  stage: package
+  needs:
+    - job: build-windows-x64
+      artifacts: true
+    - job: build-linux-x64
+      artifacts: true
+  artifacts:
+    paths:
+    - mist
+    expire_in: 1 hour
+  script:
+    # Generate third party licenses
+    - cargo install cargo-about
+    - cargo about generate about.hbs > ./mist-ThirdPartyLicenses.txt
+    - rm -rf mist/ && mkdir -p mist/
+    # Linux
+    - cp -r ./mist-linux-x64 ./mist/
+    - cp ./LICENSE ./mist/mist-linux-x64/mist/mist-LICENSE.txt
+    - cp ./mist-ThirdPartyLicenses.txt ./mist/mist-linux-x64/mist/
+    # Windows
+    - cp -r ./mist-windows-x64 ./mist/
+    - cp ./LICENSE ./mist/mist-windows-x64/mist/mist-LICENSE.txt
+    - cp ./mist-ThirdPartyLicenses.txt ./mist/mist-windows-x64/mist/

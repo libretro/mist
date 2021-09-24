@@ -9,7 +9,9 @@ fn main() {
         PathBuf::from(env::var("STEAMWORKS_SDK").expect("The STEAMWORKS_SDK variable is missing"));
     let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
 
-    match env::var("TARGET").unwrap().as_str() {
+    let target = env::var("TARGET").unwrap();
+
+    match target.as_str() {
         // Linux 64-bit
         "x86_64-unknown-linux-gnu" => {
             fs::copy(
@@ -45,7 +47,7 @@ fn main() {
         other => panic!("Unsupported target: {}", other),
     };
 
-    let bindings = bindgen::Builder::default()
+    let mut bindings_builder = bindgen::Builder::default()
         .header(
             sdk_path
                 .join("public/steam/steam_api_flat.h")
@@ -55,7 +57,16 @@ fn main() {
             "-I{}",
             Path::new(&sdk_path).join("public").to_string_lossy()
         ))
-        .clang_args(&["-xc++"])
+        .clang_args(&["-xc++"]);
+
+    #[cfg(unix)]
+    {
+        if target == "x86_64-pc-windows-gnu" {
+            bindings_builder = bindings_builder.clang_arg("-I/usr/x86_64-w64-mingw32/include/");
+        }
+    }
+
+    let bindings = bindings_builder
         .generate()
         .expect("Unable to generate bindings");
 
