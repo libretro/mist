@@ -1,7 +1,10 @@
 // I know this macro might look scary, but it abstract away all the painful IPC protocol work
 macro_rules! mist_service {
     ($(fn $call_name:ident($($arg:ident : $arg_ty:ty),*)$(-> $return_ty:ty)?;)+) => {
+        use anyhow::Result;
         use serde_derive::{Serialize, Deserialize};
+        // Some are just used for client, and some just for server
+        #[allow(unused_imports)]
         use std::{io::{Read, Write}, time::Duration};
 
         // This trait is required to be implemented by the subprocess
@@ -12,6 +15,7 @@ macro_rules! mist_service {
         }
 
         #[allow(dead_code)]
+        #[cfg(not(feature = "steamworks"))]
         pub struct MistClient<R: Read, W: Write> {
             write: W,
             pub receiver: std::sync::mpsc::Receiver<MistServiceToLibrary>,
@@ -19,6 +23,7 @@ macro_rules! mist_service {
         }
 
         #[allow(dead_code)]
+        #[cfg(not(feature = "steamworks"))]
         impl<R: Read + Send + 'static, W: Write> MistClient<R, W> {
             pub fn create(mut read: R, write: W) -> MistClient<R, W> {
                 let (sender, receiver) = std::sync::mpsc::channel::<MistServiceToLibrary>();
@@ -31,14 +36,21 @@ macro_rules! mist_service {
 
                                 let len = u32::from_le_bytes(len_buf) as usize;
                                 let mut msg_buf = vec![0; len];
-                                read.read_exact(&mut msg_buf).expect("unable to read mist service call");
+                                if let Err(err) = read.read_exact(&mut msg_buf) {
+                                    eprintln!("Error reading data payload from mist subprocess: {}", err);
+                                }
 
                                 match bincode::deserialize(&msg_buf) {
-                                    Ok(msg) => sender.send(msg).expect("Error sending message to main thread"),
-                                    Err(_) => todo!("Handle bincode deserialize error")
+                                    Ok(msg) => if sender.send(msg).is_err() {
+                                        break;
+                                    },
+                                    Err(err) => eprintln!("Error deserializing data from mist subprocess: {}", err)
                                 }
                             },
-                            Err(_) => {},
+                            Err(err) => if err.kind() != std::io::ErrorKind::UnexpectedEof {
+                                eprintln!("Error reading stdin from subprocess in mist: {}", err);
+                                break;
+                            },
                         }
                     }
 
@@ -51,21 +63,27 @@ macro_rules! mist_service {
                 }
             }
 
-            pub fn write_data<D: serde::Serialize>(&mut self, data: &D) {
-                let mut data = bincode::serialize(data).expect("error serializing data");
+            pub fn write_data<D: serde::Serialize>(&mut self, data: &D) -> Result<()> {
+                let mut data = bincode::serialize(data)?;
                 let mut payload = (data.len() as u32).to_le_bytes().to_vec();
                 payload.append(&mut data);
-                self.write.write(&payload).expect("error writing response for function");
-                self.write.flush().expect("expect flushing written data");
+                self.write.write(&payload)?;
+                self.write.flush()?;
+                Ok(())
             }
 
             $(
                 pub fn $call_name(&mut self, $($arg : $arg_ty),*) $(-> Option<$return_ty>)? {
                     // Reset the error
-                    #[cfg(not(feature = "steamworks"))]
                     crate::mist_set_error("");
                     let msg = MistLibraryToService::$call_name($($arg),*);
-                    self.write_data(&msg);
+                    if let Err(err) = self.write_data(&msg) {
+                        crate::mist_set_error(&format!("Error writing data to subprocess: {}", err));
+                        $(
+                            let _ignore: std::marker::PhantomData<$return_ty> = std::marker::PhantomData;
+                            return None;
+                        )?
+                    }
 
                     $(
                         while let Ok(data) = self.receiver.recv_timeout(std::time::Duration::from_millis(100)) {
@@ -84,7 +102,6 @@ macro_rules! mist_service {
                             }
                         }
 
-                        #[cfg(not(feature = "steamworks"))]
                         crate::mist_set_error("Timeout calling function");
                         None
                     )?
@@ -93,6 +110,7 @@ macro_rules! mist_service {
         }
 
         #[allow(dead_code)]
+        #[cfg(feature = "steamworks")]
         pub struct MistServer<S: MistService, R: Read, W: Write>
         {
             service: S,
@@ -102,6 +120,7 @@ macro_rules! mist_service {
         }
 
         #[allow(dead_code)]
+        #[cfg(feature = "steamworks")]
         impl<S: MistService, R: Read + Send + 'static, W: Write> MistServer<S, R, W> {
             pub fn create(service: S, mut read: R, write: W) -> MistServer<S, R, W> {
                 // stdin reading is blocking, therefore we have a dedicated thread for it. It will always idle while waiting
@@ -114,14 +133,23 @@ macro_rules! mist_service {
 
                                 let len = u32::from_le_bytes(len_buf) as usize;
                                 let mut msg_buf = vec![0; len];
-                                read.read_exact(&mut msg_buf).expect("unable to read mist service call");
+                                if let Err(err) = read.read_exact(&mut msg_buf) {
+                                    eprintln!("Error reading mist error call: {}", err);
+                                    continue;
+                                }
 
                                 match bincode::deserialize(&msg_buf) {
                                     Ok(msg) => sender.send(msg).expect("Error sending message to main thread"),
-                                    Err(_) => todo!("Handle bincode deserialize error")
+                                    Err(err) => {
+                                        eprintln!("Error parsing bincode in subprocess: {}", err);
+                                        continue;
+                                    }
                                 }
                             },
-                            Err(err) => if err.kind() != std::io::ErrorKind::UnexpectedEof { panic!("Error reading stdin in subprocess: {}", err) },
+                            Err(err) => if err.kind() != std::io::ErrorKind::UnexpectedEof {
+                                eprintln!("Error reading stdin in subprocess: {}", err);
+                                std::process::exit(1);
+                            },
                         }
                     }
                 });
@@ -138,12 +166,13 @@ macro_rules! mist_service {
                 &mut self.service
             }
 
-            pub fn write_data<D: serde::Serialize>(&mut self, data: &D) {
-                let mut data = bincode::serialize(data).expect("error serializing data");
+            pub fn write_data<D: serde::Serialize>(&mut self, data: &D) -> Result<()> {
+                let mut data = bincode::serialize(data)?;
                 let mut payload = (data.len() as u32).to_le_bytes().to_vec();
                 payload.append(&mut data);
-                self.write.write(&payload).expect("error writing response for function");
-                self.write.flush().expect("expect flushing written data");
+                self.write.write(&payload)?;
+                self.write.flush()?;
+                Ok(())
             }
 
             pub fn recv_timeout(&mut self, mut timeout: Duration) {
@@ -160,7 +189,9 @@ macro_rules! mist_service {
                                             // Use the $return_ty so we can ensure this is a function which has a return value
                                             let ret: $return_ty = ret;
                                             let msg = MistServiceToLibrary::Result(MistServiceToLibraryResult::$call_name(ret));
-                                            self.write_data(&msg);
+                                            if let Err(err) = self.write_data(&msg) {
+                                                eprintln!("Error replying to library call in mist subprocess: {}", err);
+                                            }
                                         )?
                                     }
                                 )*
@@ -170,7 +201,10 @@ macro_rules! mist_service {
                             timeout = Duration::default();
                         },
                         Err(std::sync::mpsc::RecvTimeoutError::Timeout) => break,
-                        Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => todo!("send error for steamworks breaking"),
+                        Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => {
+                            eprintln!("Disconnected from stdin channel in mist subprocess");
+                            std::process::exit(1);
+                        },
                     }
                 }
             }

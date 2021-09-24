@@ -7,7 +7,14 @@ static mut SUBPROCESS: Option<MistSubprocess> = None;
 macro_rules! get_subprocess {
     () => {
         match crate::subprocess::mist_get_subprocess() {
-            Some(s) => s,
+            Some(s) => {
+                if s.is_alive() {
+                    s
+                } else {
+                    crate::mist_set_error("The subprocess has died");
+                    return true;
+                }
+            }
             None => {
                 crate::mist_set_error("Subprocess has not been initialized");
                 return true;
@@ -24,6 +31,13 @@ pub struct MistSubprocess {
 impl MistSubprocess {
     pub fn client(&mut self) -> &mut MistClient<ChildStdout, ChildStdin> {
         &mut self.client
+    }
+
+    pub fn is_alive(&mut self) -> bool {
+        self.proc
+            .try_wait()
+            .map(|exit| exit.is_none())
+            .unwrap_or(false)
     }
 }
 

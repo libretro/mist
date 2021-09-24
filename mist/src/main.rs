@@ -22,8 +22,8 @@ fn main() {
     // Init the steam api
     unsafe {
         if !steamworks_sys::SteamAPI_Init() {
-            todo!();
-            //return Err("SteamAPI init failed.".into());
+            eprintln!("Error during SteamAPI init.");
+            std::process::exit(1);
         }
 
         // Setup manual dispatch since we are not using c++ classes
@@ -46,7 +46,10 @@ fn run() -> Result<(), String> {
     // Create the server using stdin/stdout as transport for IPC
     let mut server = MistServer::create(service, std::io::stdin(), std::io::stdout());
     // Tell the library that we have initialized
-    server.write_data(&MistServiceToLibrary::Initialized);
+    if let Err(err) = server.write_data(&MistServiceToLibrary::Initialized) {
+        eprintln!("Error writing intialized message to mist library: {}", err);
+        std::process::exit(1);
+    }
 
     loop {
         // Poll for messages from the library until 50ms timeout is reached
