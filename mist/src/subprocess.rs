@@ -127,7 +127,7 @@ pub fn mist_deinit_subprocess() -> bool {
 
     // Tell the subprocess to terminate
     // TODO: Kill the subprocess to terminate
-    //subprocess.proc.terminate().ok();
+    subprocess.client().exit();
 
     // Give it 500ms to terminate before killing the process
     let mut exited = false;

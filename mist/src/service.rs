@@ -6,4 +6,6 @@ mist_service!(
     // Utils
     fn get_appid() -> u32;
     fn is_steam_running_on_steam_deck() -> bool;
+    // Internal
+    fn exit();
 );

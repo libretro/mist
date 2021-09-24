@@ -1,3 +1,4 @@
+use anyhow::Result;
 use std::{ffi::CString, time::Duration};
 
 #[macro_use]
@@ -30,17 +31,20 @@ fn main() {
         steamworks_sys::SteamAPI_ManualDispatch_Init();
     }
 
-    if let Err(_err) = run() {}
+    if let Err(err) = run() {
+        eprintln!("Error while running mist subprocess: {}", err);
+    }
 
     std::process::exit(0);
 }
 
-fn run() -> Result<(), String> {
+fn run() -> Result<()> {
     // Setup the service context which is avaliable to all the service calls
     let service = MistServerService {
         steam_pipe: unsafe { steamworks_sys::SteamAPI_GetHSteamPipe() },
         steam_friends: unsafe { steamworks_sys::SteamAPI_SteamFriends_v017() },
         steam_utils: unsafe { steamworks_sys::SteamAPI_SteamUtils_v010() },
+        should_exit: false,
     };
 
     // Create the server using stdin/stdout as transport for IPC
@@ -51,7 +55,7 @@ fn run() -> Result<(), String> {
         std::process::exit(1);
     }
 
-    loop {
+    while !server.service().should_exit {
         // Poll for messages from the library until 50ms timeout is reached
         server.recv_timeout(Duration::from_millis(50));
 
@@ -60,12 +64,15 @@ fn run() -> Result<(), String> {
             steamworks_sys::SteamAPI_ManualDispatch_RunFrame(server.service().steam_pipe);
         }
     }
+
+    Ok(())
 }
 
 pub struct MistServerService {
     steam_pipe: steamworks_sys::HSteamPipe,
     steam_friends: *mut steamworks_sys::ISteamFriends,
     steam_utils: *mut steamworks_sys::ISteamUtils,
+    should_exit: bool,
 }
 
 impl MistService for MistServerService {
@@ -98,6 +105,10 @@ impl MistService for MistServerService {
     }
     fn is_steam_running_on_steam_deck(&mut self) -> bool {
         unsafe { steamworks_sys::SteamAPI_ISteamUtils_IsSteamRunningOnSteamDeck(self.steam_utils) }
+    }
+    // Other
+    fn exit(&mut self) {
+        self.should_exit = true;
     }
 }
 
