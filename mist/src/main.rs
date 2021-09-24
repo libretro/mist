@@ -16,14 +16,14 @@ fn main() {
         .map(|e| e != PROCESS_INIT_SECRET)
         .unwrap_or(true)
     {
-        println!("This executable is a subprocess used for steam integration and is not designed to be launched manually.");
+        eprintln!("This executable is a subprocess used for steam integration and is not designed to be launched manually.");
         std::process::exit(1);
     }
 
     // Init the steam api
     unsafe {
         if !steamworks_sys::SteamAPI_Init() {
-            eprintln!("Error during SteamAPI init.");
+            eprintln!("[mist] Error during SteamAPI init.");
             std::process::exit(1);
         }
 
@@ -32,7 +32,7 @@ fn main() {
     }
 
     if let Err(err) = run() {
-        eprintln!("Error while running mist subprocess: {}", err);
+        eprintln!("[mist] Error while running subprocess: {}", err);
     }
 
     std::process::exit(0);
@@ -51,7 +51,7 @@ fn run() -> Result<()> {
     let mut server = MistServer::create(service, std::io::stdin(), std::io::stdout());
     // Tell the library that we have initialized
     if let Err(err) = server.write_data(&MistServiceToLibrary::Initialized) {
-        eprintln!("Error writing intialized message to mist library: {}", err);
+        eprintln!("[mist] Error writing intialized message to library: {}", err);
         std::process::exit(1);
     }
 

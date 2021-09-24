@@ -3,7 +3,7 @@ use std::str::FromStr;
 fn main() {
     let apps = unsafe {
         if !steamworks_sys::SteamAPI_Init() {
-            panic!("Error initializing SteamAPI");
+            panic!("[mist] Error initializing SteamAPI");
         }
 
         // Setup manual dispatch since we are not using c++ classes
@@ -14,7 +14,7 @@ fn main() {
 
     let app_id = match std::env::args().nth(1) {
         Some(arg) => u32::from_str(&arg).expect("Valid appid"),
-        None => panic!("Missing appid argument"),
+        None => panic!("[mist] Missing appid argument"),
     };
 
     let mut folder = vec![0; 4096];

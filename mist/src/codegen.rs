@@ -37,18 +37,18 @@ macro_rules! mist_service {
                                 let len = u32::from_le_bytes(len_buf) as usize;
                                 let mut msg_buf = vec![0; len];
                                 if let Err(err) = read.read_exact(&mut msg_buf) {
-                                    eprintln!("Error reading data payload from mist subprocess: {}", err);
+                                    eprintln!("[mist] Error reading data payload from subprocess: {}", err);
                                 }
 
                                 match bincode::deserialize(&msg_buf) {
                                     Ok(msg) => if sender.send(msg).is_err() {
                                         break;
                                     },
-                                    Err(err) => eprintln!("Error deserializing data from mist subprocess: {}", err)
+                                    Err(err) => eprintln!("[mist] Error deserializing data from subprocess: {}", err)
                                 }
                             },
                             Err(err) => if err.kind() != std::io::ErrorKind::UnexpectedEof {
-                                eprintln!("Error reading stdin from subprocess in mist: {}", err);
+                                eprintln!("[mist] Error reading stdin from subprocess: {}", err);
                                 break;
                             },
                         }
@@ -134,20 +134,20 @@ macro_rules! mist_service {
                                 let len = u32::from_le_bytes(len_buf) as usize;
                                 let mut msg_buf = vec![0; len];
                                 if let Err(err) = read.read_exact(&mut msg_buf) {
-                                    eprintln!("Error reading mist error call: {}", err);
+                                    eprintln!("[mist] Error reading mist error call: {}", err);
                                     continue;
                                 }
 
                                 match bincode::deserialize(&msg_buf) {
                                     Ok(msg) => sender.send(msg).expect("Error sending message to main thread"),
                                     Err(err) => {
-                                        eprintln!("Error parsing bincode in subprocess: {}", err);
+                                        eprintln!("[mist] Error parsing bincode in subprocess: {}", err);
                                         continue;
                                     }
                                 }
                             },
                             Err(err) => if err.kind() != std::io::ErrorKind::UnexpectedEof {
-                                eprintln!("Error reading stdin in subprocess: {}", err);
+                                eprintln!("[mist] Error reading stdin in subprocess: {}", err);
                                 std::process::exit(1);
                             },
                         }
@@ -190,7 +190,7 @@ macro_rules! mist_service {
                                             let ret: $return_ty = ret;
                                             let msg = MistServiceToLibrary::Result(MistServiceToLibraryResult::$call_name(ret));
                                             if let Err(err) = self.write_data(&msg) {
-                                                eprintln!("Error replying to library call in mist subprocess: {}", err);
+                                                eprintln!("[mist] Error replying to library call in subprocess: {}", err);
                                             }
                                         )?
                                     }
@@ -202,7 +202,7 @@ macro_rules! mist_service {
                         },
                         Err(std::sync::mpsc::RecvTimeoutError::Timeout) => break,
                         Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => {
-                            eprintln!("Disconnected from stdin channel in mist subprocess");
+                            eprintln!("[mist] Disconnected from stdin channel in subprocess");
                             std::process::exit(1);
                         },
                     }

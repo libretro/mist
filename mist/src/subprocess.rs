@@ -52,7 +52,7 @@ pub fn mist_init_subprocess() -> bool {
     } else if cfg!(windows) {
         "mist.exe"
     } else {
-        panic!("unsupported platform")
+        panic!("[mist] unsupported platform")
     };
 
     let (exe_cwd, exe_path) = match std::env::current_dir() {
