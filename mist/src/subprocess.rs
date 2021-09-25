@@ -67,9 +67,15 @@ pub fn mist_init_subprocess() -> bool {
         }
     };
 
+    let exe_cwd_str = exe_cwd.to_string_lossy().to_string();
+    let ld_library_path = std::env::var("LD_LIBRARY_PATH")
+        .map(|p| p + ":" + &exe_cwd_str)
+        .unwrap_or_else(|_| exe_cwd_str);
+
     let mut proc = match Command::new(exe_path)
         .current_dir(exe_cwd)
         .arg(crate::consts::PROCESS_INIT_SECRET)
+        .env("LD_LIBRARY_PATH", ld_library_path.as_str())
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::inherit())
