@@ -6,7 +6,7 @@
 /**
  * Init mist, this is throwns an error if it was already initialised, returns true on error
  */
-bool mist_init(void);
+bool mist_subprocess_init(void);
 
 /**
  * Returns the latest error
@@ -35,6 +35,6 @@ bool mist_set_rich_presence(const int8_t *key, const int8_t *value);
 bool mist_get_appid(uint32_t *app_id);
 
 /**
- * Deinits the runtime, returns true on error
+ * Deinits the mist subprocess, returns true on error
  */
-bool mist_deinit(void);
+bool mist_subprocess_deinit(void);

@@ -29,7 +29,7 @@ pub fn mist_set_error(err: &str) {
 
 /// Init mist, this is throwns an error if it was already initialised, returns true on error
 #[no_mangle]
-pub extern "C" fn mist_init() -> bool {
+pub extern "C" fn mist_subprocess_init() -> bool {
     let result = std::panic::catch_unwind(|| subprocess::mist_init_subprocess());
 
     match result {
@@ -105,8 +105,8 @@ pub extern "C" fn mist_get_appid(app_id: *mut u32) -> bool {
     false
 }
 
-/// Deinits the runtime, returns true on error
+/// Deinits the mist subprocess, returns true on error
 #[no_mangle]
-pub extern "C" fn mist_deinit() -> bool {
+pub extern "C" fn mist_subprocess_deinit() -> bool {
     subprocess::mist_deinit_subprocess()
 }
