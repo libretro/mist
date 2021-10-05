@@ -8,7 +8,7 @@ mod codegen;
 mod consts;
 mod service;
 #[macro_use]
-mod subprocess;
+mod lib_subprocess;
 mod types;
 
 static mut LAST_ERROR: Option<CString> = None;
@@ -31,7 +31,7 @@ pub fn mist_set_error(err: &str) {
 /// Init mist, this is throwns an error if it was already initialised, returns true on error
 #[no_mangle]
 pub extern "C" fn mist_subprocess_init() -> bool {
-    let result = std::panic::catch_unwind(|| subprocess::mist_init_subprocess());
+    let result = std::panic::catch_unwind(|| lib_subprocess::mist_init_subprocess());
 
     match result {
         Ok(err) => err,
@@ -66,7 +66,7 @@ pub extern "C" fn mist_poll() -> bool {
 #[no_mangle]
 pub extern "C" fn mist_friends_clear_rich_presence() -> bool {
     let subprocess = get_subprocess!();
-    subprocess.client().friends_clear_rich_presence();
+    subprocess.client().clear_rich_presence();
 
     false
 }
@@ -89,7 +89,7 @@ pub extern "C" fn mist_friends_set_rich_presence(key: *const i8, value: *const i
     };
 
     // set rich presence returns true on success, so invert it
-    !unwrap_client_result!(subprocess.client().friends_set_rich_presence(key, value))
+    !unwrap_client_result!(subprocess.client().set_rich_presence(key, value))
 }
 
 /// Returns the appid of the running application
@@ -97,7 +97,7 @@ pub extern "C" fn mist_friends_set_rich_presence(key: *const i8, value: *const i
 pub extern "C" fn mist_utils_get_appid(app_id: *mut u32) -> bool {
     let subprocess = get_subprocess!();
 
-    let id = unwrap_client_result!(subprocess.client().utils_get_appid());
+    let id = unwrap_client_result!(subprocess.client().get_appid());
 
     unsafe {
         *app_id = id;
@@ -109,5 +109,5 @@ pub extern "C" fn mist_utils_get_appid(app_id: *mut u32) -> bool {
 /// Deinits the mist subprocess, returns true on error
 #[no_mangle]
 pub extern "C" fn mist_subprocess_deinit() -> bool {
-    subprocess::mist_deinit_subprocess()
+    lib_subprocess::mist_deinit_subprocess()
 }

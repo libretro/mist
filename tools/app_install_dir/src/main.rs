@@ -17,7 +17,7 @@ fn main() {
         None => panic!("[mist] Missing appid argument"),
     };
 
-    let mut folder = vec![0; 4096];
+    let mut folder = vec![0; 2048];
     let len = unsafe {
         steamworks_sys::SteamAPI_ISteamApps_GetAppInstallDir(
             apps,
