@@ -1,6 +1,19 @@
-// I know this macro might look scary, but it abstract away all the painful IPC protocol work
+macro_rules! mist_set_error {
+    ($error:expr) => {
+        #[cfg(not(feature = "steamworks"))]
+        crate::mist_set_error("Timeout calling function");
+        // TODO: Set the error in some way on the subprocess
+        #[cfg(feature = "steamworks")]
+        drop($error);
+    }
+}
+
+// I know this macro might look scary, but it abstracts away all the painful IPC protocol work
 macro_rules! mist_service {
-    ($(fn $call_name:ident($($arg:ident : $arg_ty:ty),*)$(-> $return_ty:ty)?;)+) => {
+    ($($module:ident {
+        $(fn $call_name:ident($($arg:ident : $arg_ty:ty),*)$(-> $return_ty:ty)?;)*
+    })*) => {
+        paste::paste! {
         use anyhow::Result;
         use serde_derive::{Serialize, Deserialize};
         // Some are just used for client, and some just for server
@@ -8,14 +21,18 @@ macro_rules! mist_service {
         use std::{io::{Read, Write}, time::Duration};
 
         // This trait is required to be implemented by the subprocess
-        pub trait MistService {
-            $(
-                fn $call_name(&mut self $(, $arg : $arg_ty)*) $(-> $return_ty)?;
-            )+
-        }
+
+        $(
+            pub trait [<MistService $module>] {
+                $(
+                    fn $call_name(&mut self $(, $arg : $arg_ty)*) $(-> $return_ty)?;
+                )+
+            }
+        )+
+
+        pub trait MistService: $( [<MistService $module>] + )+ {}
 
         #[allow(dead_code)]
-        #[cfg(not(feature = "steamworks"))]
         pub struct MistClient<R: Read, W: Write> {
             write: W,
             pub receiver: std::sync::mpsc::Receiver<MistServiceToLibrary>,
@@ -23,7 +40,6 @@ macro_rules! mist_service {
         }
 
         #[allow(dead_code)]
-        #[cfg(not(feature = "steamworks"))]
         impl<R: Read + Send + 'static, W: Write> MistClient<R, W> {
             pub fn create(mut read: R, write: W) -> MistClient<R, W> {
                 let (sender, receiver) = std::sync::mpsc::channel::<MistServiceToLibrary>();
@@ -72,13 +88,13 @@ macro_rules! mist_service {
                 Ok(())
             }
 
-            $(
+            $($(
                 pub fn $call_name(&mut self, $($arg : $arg_ty),*) $(-> Option<$return_ty>)? {
                     // Reset the error
-                    crate::mist_set_error("");
+                    mist_set_error!("");
                     let msg = MistLibraryToService::$call_name($($arg),*);
                     if let Err(err) = self.write_data(&msg) {
-                        crate::mist_set_error(&format!("Error writing data to subprocess: {}", err));
+                        mist_set_error!(&format!("Error writing data to subprocess: {}", err));
                         $(
                             let _ignore: std::marker::PhantomData<$return_ty> = std::marker::PhantomData;
                             return None;
@@ -102,11 +118,11 @@ macro_rules! mist_service {
                             }
                         }
 
-                        crate::mist_set_error("Timeout calling function");
+                        mist_set_error!("Timeout calling function");
                         None
                     )?
                 }
-            )*
+            )*)*
         }
 
         #[allow(dead_code)]
@@ -180,7 +196,7 @@ macro_rules! mist_service {
                     match self.receiver.recv_timeout(timeout) {
                         Ok(msg) => {
                             match msg {
-                                $(
+                                $($(
                                     MistLibraryToService::$call_name($($arg),*) => {
                                         #[allow(unused_variables)]
                                         let ret = self.service.$call_name($($arg),*);
@@ -194,7 +210,7 @@ macro_rules! mist_service {
                                             }
                                         )?
                                     }
-                                )*
+                                )*)*
                             }
 
                             // Keep timeout zero for subsequent polls so we stop when there is no more calls
@@ -215,17 +231,17 @@ macro_rules! mist_service {
         #[allow(non_camel_case_types)]
         #[derive(Serialize, Deserialize, PartialEq)]
         enum MistLibraryToService {
-            $(
+            $($(
                 $call_name($($arg_ty),*)
-            ),*
+            ),*),*
         }
 
         #[allow(non_camel_case_types)]
         #[derive(Serialize, Deserialize, PartialEq)]
         pub enum MistServiceToLibraryResult {
-            $(
+            $($(
                 $call_name($($return_ty)?)
-            ),*
+            ),*),*
         }
 
         #[derive(Serialize, Deserialize, PartialEq)]
@@ -234,5 +250,6 @@ macro_rules! mist_service {
             InitError(String),
             Result(MistServiceToLibraryResult)
         }
+    }
     }
 }

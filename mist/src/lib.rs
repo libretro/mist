@@ -9,6 +9,7 @@ mod consts;
 mod service;
 #[macro_use]
 mod subprocess;
+mod types;
 
 static mut LAST_ERROR: Option<CString> = None;
 
@@ -63,9 +64,9 @@ pub extern "C" fn mist_poll() -> bool {
 
 /// Clears the rich presence key/value store
 #[no_mangle]
-pub extern "C" fn mist_clear_rich_presence() -> bool {
+pub extern "C" fn mist_friends_clear_rich_presence() -> bool {
     let subprocess = get_subprocess!();
-    subprocess.client().clear_rich_presence();
+    subprocess.client().friends_clear_rich_presence();
 
     false
 }
@@ -73,7 +74,7 @@ pub extern "C" fn mist_clear_rich_presence() -> bool {
 /// Sets the rich presence key/value
 /// Value can be NULL to clear the key
 #[no_mangle]
-pub extern "C" fn mist_set_rich_presence(key: *const i8, value: *const i8) -> bool {
+pub extern "C" fn mist_friends_set_rich_presence(key: *const i8, value: *const i8) -> bool {
     let subprocess = get_subprocess!();
 
     let key = unsafe { CStr::from_ptr(key) }.to_string_lossy().to_string();
@@ -88,15 +89,15 @@ pub extern "C" fn mist_set_rich_presence(key: *const i8, value: *const i8) -> bo
     };
 
     // set rich presence returns true on success, so invert it
-    !unwrap_client_result!(subprocess.client().set_rich_presence(key, value))
+    !unwrap_client_result!(subprocess.client().friends_set_rich_presence(key, value))
 }
 
 /// Returns the appid of the running application
 #[no_mangle]
-pub extern "C" fn mist_get_appid(app_id: *mut u32) -> bool {
+pub extern "C" fn mist_utils_get_appid(app_id: *mut u32) -> bool {
     let subprocess = get_subprocess!();
 
-    let id = unwrap_client_result!(subprocess.client().get_appid());
+    let id = unwrap_client_result!(subprocess.client().utils_get_appid());
 
     unsafe {
         *app_id = id;

@@ -5,9 +5,10 @@ use std::{ffi::CString, time::Duration};
 mod codegen;
 mod consts;
 mod service;
+mod types;
 
 use consts::PROCESS_INIT_SECRET;
-use service::{MistServer, MistService, MistServiceToLibrary};
+use service::*;
 
 fn main() {
     // Keep users away
@@ -78,14 +79,14 @@ pub struct MistServerService {
     should_exit: bool,
 }
 
-impl MistService for MistServerService {
-    // Friends
-    fn clear_rich_presence(&mut self) {
+// Friends
+impl MistServiceFriends for MistServerService {
+    fn friends_clear_rich_presence(&mut self) {
         unsafe {
             steamworks_sys::SteamAPI_ISteamFriends_ClearRichPresence(self.steam_friends);
         }
     }
-    fn set_rich_presence(&mut self, key: String, value: Option<String>) -> bool {
+    fn friends_set_rich_presence(&mut self, key: String, value: Option<String>) -> bool {
         // Turn the string into a c null terminated string
         let c_key = CString::new(key).unwrap_or_default();
         // value can be None (NULL) to clear it
@@ -102,18 +103,25 @@ impl MistService for MistServerService {
             )
         }
     }
-    // Utils
-    fn get_appid(&mut self) -> u32 {
+}
+
+// Utils
+impl MistServiceUtils for MistServerService {
+    fn utils_get_appid(&mut self) -> u32 {
         unsafe { steamworks_sys::SteamAPI_ISteamUtils_GetAppID(self.steam_utils) }
     }
-    fn is_steam_running_on_steam_deck(&mut self) -> bool {
+    fn utils_is_steam_running_on_steam_deck(&mut self) -> bool {
         unsafe { steamworks_sys::SteamAPI_ISteamUtils_IsSteamRunningOnSteamDeck(self.steam_utils) }
     }
-    // Other
+}
+
+impl MistServiceInternal for MistServerService {
     fn exit(&mut self) {
         self.should_exit = true;
     }
 }
+
+impl MistService for MistServerService {}
 
 impl Drop for MistServerService {
     fn drop(&mut self) {
