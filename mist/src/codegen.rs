@@ -1,7 +1,7 @@
 macro_rules! mist_set_error {
     ($error:expr) => {
         #[cfg(not(feature = "steamworks"))]
-        crate::mist_set_error("Timeout calling function");
+        crate::mist_set_error($error);
         // TODO: Set the error in some way on the subprocess
         #[cfg(feature = "steamworks")]
         drop($error);
@@ -20,12 +20,18 @@ macro_rules! mist_service {
             #[allow(unused_imports)]
             use std::{io::{Read, Write}, time::Duration};
 
-            // This trait is required to be implemented by the subprocess
-
             $(
+                // Trait for subprocess
                 pub trait [<MistService $module>] {
                     $(
                         fn $call_name(&mut self $(, $arg : $arg_ty)*) $(-> $return_ty)?;
+                    )+
+                }
+
+                // Trait for client/library
+                pub trait [<MistClient $module>] {
+                    $(
+                        fn $call_name(&mut self $(, $arg : $arg_ty)*) $(-> Option<$return_ty>)?;
                     )+
                 }
             )+
@@ -88,42 +94,53 @@ macro_rules! mist_service {
                     Ok(())
                 }
 
-                $($(
-                    pub fn $call_name(&mut self, $($arg : $arg_ty),*) $(-> Option<$return_ty>)? {
-                        // Reset the error
-                        mist_set_error!("");
-                        let msg = MistLibraryToService::$call_name($($arg),*);
-                        if let Err(err) = self.write_data(&msg) {
-                            mist_set_error!(&format!("Error writing data to subprocess: {}", err));
-                            $(
-                                let _ignore: std::marker::PhantomData<$return_ty> = std::marker::PhantomData;
-                                return None;
-                            )?
-                        }
+                $(
+                    pub fn [< $module:lower >](&mut self) -> &mut dyn [<MistClient $module>] {
+                        self
+                    }
+                )*
+            }
 
-                        $(
-                            while let Ok(data) = self.receiver.recv_timeout(std::time::Duration::from_millis(100)) {
-                                match data {
-                                    MistServiceToLibrary::Result(res) => {
-                                        match res {
-                                            MistServiceToLibraryResult::$call_name(res) => {
-                                                let res: $return_ty = res;
-                                                return Some(res);
-                                            }
+            $(
+                impl <R: Read + Send + 'static, W: Write> [<MistClient $module>] for MistClient<R, W> {
+                    $(
+
+                            fn $call_name(&mut self, $($arg : $arg_ty),*) $(-> Option<$return_ty>)? {
+                                // Reset the error
+                                mist_set_error!("");
+                                let msg = MistLibraryToService::$call_name($($arg),*);
+                                if let Err(err) = self.write_data(&msg) {
+                                    mist_set_error!(&format!("Error writing data to subprocess: {}", err));
+                                    $(
+                                        let _ignore: std::marker::PhantomData<$return_ty> = std::marker::PhantomData;
+                                        return None;
+                                    )?
+                                }
+
+                                $(
+                                    while let Ok(data) = self.receiver.recv_timeout(std::time::Duration::from_millis(100)) {
+                                        match data {
+                                            MistServiceToLibrary::Result(res) => {
+                                                match res {
+                                                    MistServiceToLibraryResult::$call_name(res) => {
+                                                        let res: $return_ty = res;
+                                                        return Some(res);
+                                                    }
+                                                    _ => ()
+                                                }
+                                            },
+                                            // TODO: Add events to a queue for poll
                                             _ => ()
                                         }
-                                    },
-                                    // TODO: Add events to a queue for poll
-                                    _ => ()
-                                }
-                            }
+                                    }
 
-                            mist_set_error!("Timeout calling function");
-                            None
-                        )?
-                    }
-                )*)*
-            }
+                                    mist_set_error!("Timeout calling function");
+                                    None
+                                )?
+                            }
+                        )*
+                }
+            )+
 
             #[allow(dead_code)]
             #[cfg(feature = "steamworks")]
