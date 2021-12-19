@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{io::Write, str::FromStr};
 
 fn main() {
     let apps = unsafe {
@@ -32,9 +32,8 @@ fn main() {
     if len == 0 {
         std::process::exit(1);
     } else {
-        println!(
-            "{}",
-            unsafe { std::ffi::CStr::from_ptr(folder.as_ptr()) }.to_string_lossy()
-        )
+        std::io::stdout()
+            .write(unsafe { std::ffi::CStr::from_ptr(folder.as_ptr()) }.to_bytes())
+            .unwrap();
     }
 }
