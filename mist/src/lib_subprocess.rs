@@ -19,7 +19,7 @@ macro_rules! get_subprocess {
                 crate::mist_set_error("Subprocess has not been initialized");
                 return false;
             }
-        };
+        }
     };
 }
 

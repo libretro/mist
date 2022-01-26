@@ -89,7 +89,7 @@ macro_rules! mist_service {
                     let mut data = bincode::serialize(data)?;
                     let mut payload = (data.len() as u32).to_le_bytes().to_vec();
                     payload.append(&mut data);
-                    self.write.write(&payload)?;
+                    self.write.write_all(&payload)?;
                     self.write.flush()?;
                     Ok(())
                 }
@@ -120,14 +120,9 @@ macro_rules! mist_service {
                                 $(
                                     while let Ok(data) = self.receiver.recv_timeout(std::time::Duration::from_millis(100)) {
                                         match data {
-                                            MistServiceToLibrary::Result(res) => {
-                                                match res {
-                                                    MistServiceToLibraryResult::$call_name(res) => {
-                                                        let res: $return_ty = res;
-                                                        return Some(res);
-                                                    }
-                                                    _ => ()
-                                                }
+                                            MistServiceToLibrary::Result(MistServiceToLibraryResult::$call_name(res)) => {
+                                                let res: $return_ty = res;
+                                                return Some(res);
                                             },
                                             // TODO: Add events to a queue for poll
                                             _ => ()

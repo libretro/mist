@@ -1,4 +1,4 @@
-use std::{os::raw::c_char, ffi::CStr};
+use std::{ffi::CStr, os::raw::c_char};
 
 /// Clears the rich presence key/value store
 /// Returns false on error

@@ -1,2 +1,2 @@
 // Used to throw an error when running the subprocess directly
-pub const PROCESS_INIT_SECRET: &'static str = "youarenotsupposedtorunmistdirectly";
+pub const PROCESS_INIT_SECRET: &str = "youarenotsupposedtorunmistdirectly";

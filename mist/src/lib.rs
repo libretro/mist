@@ -28,13 +28,13 @@ pub fn mist_set_error(err: &str) {
 /// Init mist, this is throwns an error if it was already initialised, returns false on error
 #[no_mangle]
 pub extern "C" fn mist_subprocess_init() -> bool {
-    let result = std::panic::catch_unwind(|| lib_subprocess::mist_init_subprocess());
+    let result = std::panic::catch_unwind(lib_subprocess::mist_init_subprocess);
 
     match result {
         Ok(err) => err,
         Err(_) => {
             mist_set_error("Internal panic during initialization");
-            return false;
+            false
         }
     }
 }

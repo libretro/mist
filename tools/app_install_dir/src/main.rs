@@ -33,7 +33,7 @@ fn main() {
         std::process::exit(1);
     } else {
         std::io::stdout()
-            .write(unsafe { std::ffi::CStr::from_ptr(folder.as_ptr()) }.to_bytes())
+            .write_all(unsafe { std::ffi::CStr::from_ptr(folder.as_ptr()) }.to_bytes())
             .unwrap();
     }
 }
