@@ -20,12 +20,12 @@ macro_rules! mist_service {
 
     };
     (__fallback_ty_ret) => {
-        Ok(())
+        return Ok(());
     };
-    (__fallback_ty_ret, $call_name:ident, $res:expr, $ty:ty) => {
+    (__fallback_ty_ret, $call_name:ident, $res:ident, $ty:ty) => {
         MistServiceToLibraryResult::$call_name($res)
     };
-    (__fallback_ty_ret, $call_name:ident, $res:expr) => {
+    (__fallback_ty_ret, $call_name:ident, $res:ident) => {
         MistServiceToLibraryResult::$call_name
     };
     ($($module:ident {
@@ -133,12 +133,15 @@ macro_rules! mist_service {
                                     return Err(Error::Mist(MistError::SubprocessLost));
                                 }
 
-                                $(
+
                                     while let Ok(data) = self.receiver.recv_timeout(std::time::Duration::from_millis(100)) {
                                         match data {
-                                            MistServiceToLibrary::Result(Ok(MistServiceToLibraryResult::$call_name(res))) => {
-                                                let res: $return_ty = res;
-                                                return Ok(res);
+                                            MistServiceToLibrary::Result(Ok(mist_service!{__fallback_ty_ret, $call_name, res $(,$return_ty)?})) => {
+                                                $(
+                                                    let res: $return_ty = res;
+                                                    return Ok(res);
+                                                )?
+                                                mist_service!{__fallback_ty_ret$(,$return_ty)?}
                                             },
                                             MistServiceToLibrary::Result(Err(err)) => {
                                                 return Err(err);
@@ -150,9 +153,7 @@ macro_rules! mist_service {
 
                                     mist_set_error!("Timeout calling function");
                                     return Err(Error::Mist(MistError::Timeout));
-                                )?
 
-                                mist_service!{__fallback_ty_ret$(,$return_ty)?}
                             }
                         )*
                 }
