@@ -1,20 +1,25 @@
 use std::{ffi::CStr, os::raw::c_char};
 
+use crate::result::{MistResult, Success};
+
 /// Clears the rich presence key/value store
 /// Returns false on error
 #[no_mangle]
-pub extern "C" fn mist_friends_clear_rich_presence() -> bool {
+pub extern "C" fn mist_friends_clear_rich_presence() -> MistResult {
     let subprocess = get_subprocess!();
-    subprocess.client().friends().clear_rich_presence();
+    unwrap_client_result!(subprocess.client().friends().clear_rich_presence());
 
-    true
+    Success
 }
 
 /// Sets the rich presence key/value
 /// Value can be NULL to clear the key
 /// Returns false on error
 #[no_mangle]
-pub extern "C" fn mist_friends_set_rich_presence(key: *const c_char, value: *const c_char) -> bool {
+pub extern "C" fn mist_friends_set_rich_presence(
+    key: *const c_char,
+    value: *const c_char,
+) -> MistResult {
     let subprocess = get_subprocess!();
 
     let key = unsafe { CStr::from_ptr(key) }.to_string_lossy().to_string();
@@ -28,5 +33,7 @@ pub extern "C" fn mist_friends_set_rich_presence(key: *const c_char, value: *con
         )
     };
 
-    unwrap_client_result!(subprocess.client().friends().set_rich_presence(key, value))
+    unwrap_client_result!(subprocess.client().friends().set_rich_presence(key, value));
+
+    Success
 }

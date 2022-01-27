@@ -4,7 +4,7 @@ use crate::types::*;
 mist_service!(
     // ISteamApps
     Apps {
-        fn get_dlc_data_by_index(dlc: i32) -> Option<DlcData>;
+        fn get_dlc_data_by_index(dlc: i32) -> DlcData;
         fn is_app_installed(app_id: AppId) -> bool;
         fn is_cybercafe() -> bool;
         fn is_dlc_installed(app_id: AppId) -> bool;

@@ -1,6 +1,9 @@
 use std::process::{Child, ChildStdin, ChildStdout, Command, Stdio};
 
-use crate::service::{MistClient, MistServiceToLibrary};
+use crate::{
+    result::{Error, MistError},
+    service::{MistClient, MistServiceToLibrary},
+};
 
 static mut SUBPROCESS: Option<MistSubprocess> = None;
 
@@ -12,12 +15,16 @@ macro_rules! get_subprocess {
                     s
                 } else {
                     crate::mist_set_error("The subprocess has died");
-                    return false;
+                    return crate::result::Error::Mist(crate::result::MistError::SubprocessLost)
+                        .into();
                 }
             }
             None => {
                 crate::mist_set_error("Subprocess has not been initialized");
-                return false;
+                return crate::result::Error::Mist(
+                    crate::result::MistError::SubprocessNotInitialized,
+                )
+                .into();
             }
         }
     };
@@ -41,10 +48,10 @@ impl MistSubprocess {
     }
 }
 
-pub fn mist_init_subprocess() -> bool {
+pub fn mist_init_subprocess() -> Result<(), Error> {
     if unsafe { SUBPROCESS.is_some() } {
         crate::mist_set_error("The subprocess has already been initialized");
-        return false;
+        return Err(Error::Mist(MistError::SubprocessAlreadyInitialized));
     }
 
     let exe = if cfg!(unix) {
@@ -63,7 +70,7 @@ pub fn mist_init_subprocess() -> bool {
         }
         Err(err) => {
             crate::mist_set_error(&format!("Invalid current path: {}", err));
-            return false;
+            return Err(Error::Mist(MistError::SubprocessNotFound));
         }
     };
 
@@ -84,7 +91,7 @@ pub fn mist_init_subprocess() -> bool {
         Ok(child) => child,
         Err(err) => {
             crate::mist_set_error(&format!("Error spawning subprocess: {}", err));
-            return false;
+            return Err(Error::Mist(MistError::SubprocessSpawnError));
         }
     };
 
@@ -107,32 +114,32 @@ pub fn mist_init_subprocess() -> bool {
             MistServiceToLibrary::Initialized => (),
             MistServiceToLibrary::InitError(err) => {
                 crate::mist_set_error(&format!("Subprocess initialization error: {}", err));
-                return false;
+                return Err(Error::Mist(MistError::SubprocessInitializationError));
             }
             _ => unreachable!(),
         },
         Err(err) => {
             crate::mist_set_error(&format!("Subprocess initialization error: {}", err));
-            return false;
+            return Err(Error::Mist(MistError::SubprocessInitializationError));
         }
     }
 
-    true
+    Ok(())
 }
 
-pub fn mist_deinit_subprocess() -> bool {
+pub fn mist_deinit_subprocess() -> Result<(), Error> {
     let subprocess = match unsafe { &mut SUBPROCESS } {
         Some(s) => s,
         None => {
             crate::mist_set_error(
                 "The subprocess cannot be deinitialized when it has not been initialized.",
             );
-            return false;
+            return Err(Error::Mist(MistError::SubprocessNotInitialized));
         }
     };
 
     // Tell the subprocess to terminate
-    subprocess.client().internal().exit();
+    subprocess.client().internal().exit()?;
 
     // Give it 500ms to terminate before killing the process
     let mut exited = false;
@@ -155,14 +162,14 @@ pub fn mist_deinit_subprocess() -> bool {
             Ok(_) => (),
             Err(err) => {
                 crate::mist_set_error(&format!("Error killing the subprocess: {}", err));
-                return false;
+                return Err(Error::Mist(MistError::SubprocessUnkillable));
             }
         }
     }
 
     unsafe { SUBPROCESS = None };
 
-    true
+    Ok(())
 }
 
 pub fn mist_get_subprocess<'a>() -> Option<&'a mut MistSubprocess> {

@@ -1,3 +1,4 @@
 #!/bin/bash
 
-cbindgen --crate mist --lang c --output "$(dirname $0)/../include/mist.h"
+cargo run --bin generate_headers -- "$(dirname $0)/../include/"
+(cd $(dirname $0)/../ && cbindgen --config cbindgen.toml --crate mist --output "$(dirname $0)/../include/mist.h")

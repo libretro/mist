@@ -1,0 +1,17 @@
+language = "C"
+
+
+
+after_includes = """
+
+#define MIST_IS_SUCCESS(result) ((result & 0xFFFF)==0)
+#define MIST_IS_ERROR(result) ((result & 0xFFFF)!=0)
+#define MIST_RESULT(code, error) ((MistResult)error << 16 | (MistResult)code)
+#define MIST_ERROR(result) (result >> 16)
+#define MIST_RESULT_CODE(result) (result & 0xFFFF)"""
+
+
+include_guard = "mist_h"
+
+includes = ["mist_results.h"]
+

@@ -17,7 +17,7 @@ steamworks = ["steamworks-sys"]
 [lib]
 name = "mist"
 path = "src/lib.rs"
-crate-type = ["cdylib"] # Generate a c-abi compatible lib
+crate-type = ["cdylib", "rlib"] # Generate a c-abi compatible lib
 
 [[bin]]
 name = "mist"

@@ -1,11 +1,15 @@
 use std::ffi::{CStr, CString};
 
 use super::MistServerService;
-use crate::{service::MistServiceApps, types::*};
+use crate::{
+    result::{Error, SteamAppsError},
+    service::MistServiceApps,
+    types::*,
+};
 
 // ISteamApps
 impl MistServiceApps for MistServerService {
-    fn get_dlc_data_by_index(&mut self, dlc: i32) -> Option<DlcData> {
+    fn get_dlc_data_by_index(&mut self, dlc: i32) -> Result<DlcData, Error> {
         let mut app_id = 0;
         let mut avaliable = false;
         let mut name = vec![0; 2048];
@@ -22,7 +26,7 @@ impl MistServiceApps for MistServerService {
         };
 
         if ok {
-            Some(DlcData {
+            Ok(DlcData {
                 app_id,
                 avaliable,
                 name: unsafe { CStr::from_ptr(name.as_ptr()) }
@@ -30,53 +34,59 @@ impl MistServiceApps for MistServerService {
                     .into(),
             })
         } else {
-            None
+            Err(Error::SteamApps(SteamAppsError::InvalidDlcIndex))
         }
     }
 
-    fn is_app_installed(&mut self, app_id: AppId) -> bool {
-        unsafe { steamworks_sys::SteamAPI_ISteamApps_BIsAppInstalled(self.steam_apps, app_id) }
+    fn is_app_installed(&mut self, app_id: AppId) -> Result<bool, Error> {
+        Ok(unsafe { steamworks_sys::SteamAPI_ISteamApps_BIsAppInstalled(self.steam_apps, app_id) })
     }
 
-    fn is_cybercafe(&mut self) -> bool {
-        unsafe { steamworks_sys::SteamAPI_ISteamApps_BIsCybercafe(self.steam_apps) }
+    fn is_cybercafe(&mut self) -> Result<bool, Error> {
+        Ok(unsafe { steamworks_sys::SteamAPI_ISteamApps_BIsCybercafe(self.steam_apps) })
     }
 
-    fn is_dlc_installed(&mut self, app_id: AppId) -> bool {
-        unsafe { steamworks_sys::SteamAPI_ISteamApps_BIsDlcInstalled(self.steam_apps, app_id) }
+    fn is_dlc_installed(&mut self, app_id: AppId) -> Result<bool, Error> {
+        Ok(unsafe { steamworks_sys::SteamAPI_ISteamApps_BIsDlcInstalled(self.steam_apps, app_id) })
     }
 
-    fn is_low_violence(&mut self) -> bool {
-        unsafe { steamworks_sys::SteamAPI_ISteamApps_BIsLowViolence(self.steam_apps) }
+    fn is_low_violence(&mut self) -> Result<bool, Error> {
+        Ok(unsafe { steamworks_sys::SteamAPI_ISteamApps_BIsLowViolence(self.steam_apps) })
     }
 
-    fn is_subscribed(&mut self) -> bool {
-        unsafe { steamworks_sys::SteamAPI_ISteamApps_BIsSubscribed(self.steam_apps) }
+    fn is_subscribed(&mut self) -> Result<bool, Error> {
+        Ok(unsafe { steamworks_sys::SteamAPI_ISteamApps_BIsSubscribed(self.steam_apps) })
     }
 
-    fn is_subscribed_app(&mut self, app_id: AppId) -> bool {
-        unsafe { steamworks_sys::SteamAPI_ISteamApps_BIsSubscribedApp(self.steam_apps, app_id) }
+    fn is_subscribed_app(&mut self, app_id: AppId) -> Result<bool, Error> {
+        Ok(
+            unsafe {
+                steamworks_sys::SteamAPI_ISteamApps_BIsSubscribedApp(self.steam_apps, app_id)
+            },
+        )
     }
 
-    fn is_subscribed_from_family_sharing(&mut self) -> bool {
-        unsafe {
+    fn is_subscribed_from_family_sharing(&mut self) -> Result<bool, Error> {
+        Ok(unsafe {
             steamworks_sys::SteamAPI_ISteamApps_BIsSubscribedFromFamilySharing(self.steam_apps)
-        }
+        })
     }
 
-    fn is_subscribed_from_free_weekend(&mut self) -> bool {
-        unsafe { steamworks_sys::SteamAPI_ISteamApps_BIsSubscribedFromFreeWeekend(self.steam_apps) }
+    fn is_subscribed_from_free_weekend(&mut self) -> Result<bool, Error> {
+        Ok(unsafe {
+            steamworks_sys::SteamAPI_ISteamApps_BIsSubscribedFromFreeWeekend(self.steam_apps)
+        })
     }
 
-    fn is_vac_banned(&mut self) -> bool {
-        unsafe { steamworks_sys::SteamAPI_ISteamApps_BIsVACBanned(self.steam_apps) }
+    fn is_vac_banned(&mut self) -> Result<bool, Error> {
+        Ok(unsafe { steamworks_sys::SteamAPI_ISteamApps_BIsVACBanned(self.steam_apps) })
     }
 
-    fn get_app_build_id(&mut self) -> BuildId {
-        unsafe { steamworks_sys::SteamAPI_ISteamApps_GetAppBuildId(self.steam_apps) }
+    fn get_app_build_id(&mut self) -> Result<BuildId, Error> {
+        Ok(unsafe { steamworks_sys::SteamAPI_ISteamApps_GetAppBuildId(self.steam_apps) })
     }
 
-    fn get_app_install_dir(&mut self, app_id: AppId) -> Option<String> {
+    fn get_app_install_dir(&mut self, app_id: AppId) -> Result<Option<String>, Error> {
         let mut folder = vec![0; 2048];
         let len = unsafe {
             steamworks_sys::SteamAPI_ISteamApps_GetAppInstallDir(
@@ -87,7 +97,7 @@ impl MistServiceApps for MistServerService {
             )
         };
 
-        if len == 0 {
+        Ok(if len == 0 {
             None
         } else {
             Some(
@@ -95,24 +105,24 @@ impl MistServiceApps for MistServerService {
                     .to_string_lossy()
                     .into(),
             )
-        }
+        })
     }
 
-    fn get_app_owner(&mut self) -> SteamId {
-        unsafe { steamworks_sys::SteamAPI_ISteamApps_GetAppOwner(self.steam_apps) }
+    fn get_app_owner(&mut self) -> Result<SteamId, Error> {
+        Ok(unsafe { steamworks_sys::SteamAPI_ISteamApps_GetAppOwner(self.steam_apps) })
     }
 
-    fn get_available_game_languages(&mut self) -> String {
+    fn get_available_game_languages(&mut self) -> Result<String, Error> {
         let languages = unsafe {
             steamworks_sys::SteamAPI_ISteamApps_GetAvailableGameLanguages(self.steam_apps)
         };
 
-        unsafe { CStr::from_ptr(languages) }
+        Ok(unsafe { CStr::from_ptr(languages) }
             .to_string_lossy()
-            .into()
+            .into())
     }
 
-    fn get_current_beta_name(&mut self) -> Option<String> {
+    fn get_current_beta_name(&mut self) -> Result<Option<String>, Error> {
         let mut beta = vec![0; 2048];
         let on_beta = unsafe {
             steamworks_sys::SteamAPI_ISteamApps_GetCurrentBetaName(
@@ -122,7 +132,7 @@ impl MistServiceApps for MistServerService {
             )
         };
 
-        if on_beta {
+        Ok(if on_beta {
             Some(
                 unsafe { CStr::from_ptr(beta.as_ptr()) }
                     .to_string_lossy()
@@ -130,47 +140,49 @@ impl MistServiceApps for MistServerService {
             )
         } else {
             None
-        }
+        })
     }
 
-    fn get_current_game_language(&mut self) -> String {
+    fn get_current_game_language(&mut self) -> Result<String, Error> {
         let language =
             unsafe { steamworks_sys::SteamAPI_ISteamApps_GetCurrentGameLanguage(self.steam_apps) };
 
-        unsafe { CStr::from_ptr(language) }.to_string_lossy().into()
+        Ok(unsafe { CStr::from_ptr(language) }.to_string_lossy().into())
     }
 
-    fn get_dlc_count(&mut self) -> i32 {
-        unsafe { steamworks_sys::SteamAPI_ISteamApps_GetDLCCount(self.steam_apps) }
+    fn get_dlc_count(&mut self) -> Result<i32, Error> {
+        Ok(unsafe { steamworks_sys::SteamAPI_ISteamApps_GetDLCCount(self.steam_apps) })
     }
 
-    fn get_dlc_download_progress(&mut self, app_id: AppId) -> Option<(u64, u64)> {
+    fn get_dlc_download_progress(&mut self, app_id: AppId) -> Result<Option<(u64, u64)>, Error> {
         let mut bytes_downloaded = 0;
         let mut total_bytes = 0;
 
-        if unsafe {
-            steamworks_sys::SteamAPI_ISteamApps_GetDlcDownloadProgress(
-                self.steam_apps,
-                app_id,
-                &mut bytes_downloaded,
-                &mut total_bytes,
-            )
-        } {
-            Some((bytes_downloaded, total_bytes))
-        } else {
-            None
-        }
+        Ok(
+            if unsafe {
+                steamworks_sys::SteamAPI_ISteamApps_GetDlcDownloadProgress(
+                    self.steam_apps,
+                    app_id,
+                    &mut bytes_downloaded,
+                    &mut total_bytes,
+                )
+            } {
+                Some((bytes_downloaded, total_bytes))
+            } else {
+                None
+            },
+        )
     }
 
-    fn get_earliest_purchase_unix_time(&mut self, app_id: AppId) -> u32 {
-        unsafe {
+    fn get_earliest_purchase_unix_time(&mut self, app_id: AppId) -> Result<u32, Error> {
+        Ok(unsafe {
             steamworks_sys::SteamAPI_ISteamApps_GetEarliestPurchaseUnixTime(self.steam_apps, app_id)
-        }
+        })
     }
 
     //fn get_file_details(file_name: String) -> ();
 
-    fn get_installed_depots(&mut self, app_id: AppId) -> Vec<DepotId> {
+    fn get_installed_depots(&mut self, app_id: AppId) -> Result<Vec<DepotId>, Error> {
         let mut depots = vec![0; 2048];
         let depots_len = unsafe {
             steamworks_sys::SteamAPI_ISteamApps_GetInstalledDepots(
@@ -181,10 +193,10 @@ impl MistServiceApps for MistServerService {
             )
         };
 
-        depots[..depots_len as usize].to_vec()
+        Ok(depots[..depots_len as usize].to_vec())
     }
 
-    fn get_launch_command_line(&mut self) -> String {
+    fn get_launch_command_line(&mut self) -> Result<String, Error> {
         let mut launch_command_line = vec![0; 2048];
         let len = unsafe {
             steamworks_sys::SteamAPI_ISteamApps_GetLaunchCommandLine(
@@ -194,19 +206,19 @@ impl MistServiceApps for MistServerService {
             )
         };
 
-        if len == 0 {
+        Ok(if len == 0 {
             "".into()
         } else {
             unsafe { CStr::from_ptr(launch_command_line.as_ptr()) }
                 .to_string_lossy()
                 .into()
-        }
+        })
     }
 
-    fn get_launch_query_param(&mut self, key: String) -> Option<String> {
+    fn get_launch_query_param(&mut self, key: String) -> Result<Option<String>, Error> {
         static mut LAUNCH_QUERY_KEY: Option<CString> = None;
         unsafe {
-            LAUNCH_QUERY_KEY = Some(CString::new(key).ok()?);
+            LAUNCH_QUERY_KEY = Some(CString::new(key).unwrap());
         }
 
         let param_ptr = unsafe {
@@ -218,27 +230,31 @@ impl MistServiceApps for MistServerService {
 
         let param = unsafe { CStr::from_ptr(param_ptr) }.to_string_lossy();
 
-        if param.len() == 0 {
+        Ok(if param.len() == 0 {
             None
         } else {
             Some(param.into())
-        }
+        })
     }
 
-    fn install_dlc(&mut self, app_id: AppId) {
+    fn install_dlc(&mut self, app_id: AppId) -> Result<(), Error> {
         unsafe { steamworks_sys::SteamAPI_ISteamApps_InstallDLC(self.steam_apps, app_id) }
+
+        Ok(())
     }
 
-    fn mark_content_corrupt(&mut self, missing_files_only: bool) -> bool {
-        unsafe {
+    fn mark_content_corrupt(&mut self, missing_files_only: bool) -> Result<bool, Error> {
+        Ok(unsafe {
             steamworks_sys::SteamAPI_ISteamApps_MarkContentCorrupt(
                 self.steam_apps,
                 missing_files_only,
             )
-        }
+        })
     }
 
-    fn uninstall_dlc(&mut self, app_id: AppId) {
+    fn uninstall_dlc(&mut self, app_id: AppId) -> Result<(), Error> {
         unsafe { steamworks_sys::SteamAPI_ISteamApps_UninstallDLC(self.steam_apps, app_id) }
+
+        Ok(())
     }
 }

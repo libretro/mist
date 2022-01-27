@@ -10,11 +10,30 @@ macro_rules! mist_set_error {
 
 // I know this macro might look scary, but it abstracts away all the painful IPC protocol work
 macro_rules! mist_service {
+    (__fallback_ty, $ty:ty) => {
+        $ty
+    };
+    (__fallback_ty) => {
+        ()
+    };
+    (__fallback_ty_ret, $ty:ty) => {
+
+    };
+    (__fallback_ty_ret) => {
+        Ok(())
+    };
+    (__fallback_ty_ret, $call_name:ident, $res:expr, $ty:ty) => {
+        MistServiceToLibraryResult::$call_name($res)
+    };
+    (__fallback_ty_ret, $call_name:ident, $res:expr) => {
+        MistServiceToLibraryResult::$call_name
+    };
     ($($module:ident {
         $(fn $call_name:ident($($arg:ident : $arg_ty:ty),*)$(-> $return_ty:ty)?;)*
     })*) => {
         paste::paste! {
             use anyhow::Result;
+            use crate::result::{Error, MistError};
             use serde_derive::{Serialize, Deserialize};
             // Some are just used for client, and some just for server
             #[allow(unused_imports)]
@@ -24,14 +43,14 @@ macro_rules! mist_service {
                 // Trait for subprocess
                 pub trait [<MistService $module>] {
                     $(
-                        fn $call_name(&mut self $(, $arg : $arg_ty)*) $(-> $return_ty)?;
+                        fn $call_name(&mut self $(, $arg : $arg_ty)*) -> Result<mist_service!(__fallback_ty$(,$return_ty)?), Error>;
                     )+
                 }
 
                 // Trait for client/library
                 pub trait [<MistClient $module>] {
                     $(
-                        fn $call_name(&mut self $(, $arg : $arg_ty)*) $(-> Option<$return_ty>)?;
+                        fn $call_name(&mut self $(, $arg : $arg_ty)*) -> Result<mist_service!(__fallback_ty$(,$return_ty)?), Error>;
                     )+
                 }
             )+
@@ -105,24 +124,24 @@ macro_rules! mist_service {
                 impl <R: Read + Send + 'static, W: Write> [<MistClient $module>] for MistClient<R, W> {
                     $(
 
-                            fn $call_name(&mut self, $($arg : $arg_ty),*) $(-> Option<$return_ty>)? {
+                            fn $call_name(&mut self, $($arg : $arg_ty),*) -> Result<mist_service!(__fallback_ty$(,$return_ty)?), Error> {
                                 // Reset the error
                                 mist_set_error!("");
                                 let msg = MistLibraryToService::$call_name($($arg),*);
                                 if let Err(err) = self.write_data(&msg) {
                                     mist_set_error!(&format!("Error writing data to subprocess: {}", err));
-                                    $(
-                                        let _ignore: std::marker::PhantomData<$return_ty> = std::marker::PhantomData;
-                                        return None;
-                                    )?
+                                    return Err(Error::Mist(MistError::SubprocessLost));
                                 }
 
                                 $(
                                     while let Ok(data) = self.receiver.recv_timeout(std::time::Duration::from_millis(100)) {
                                         match data {
-                                            MistServiceToLibrary::Result(MistServiceToLibraryResult::$call_name(res)) => {
+                                            MistServiceToLibrary::Result(Ok(MistServiceToLibraryResult::$call_name(res))) => {
                                                 let res: $return_ty = res;
-                                                return Some(res);
+                                                return Ok(res);
+                                            },
+                                            MistServiceToLibrary::Result(Err(err)) => {
+                                                return Err(err);
                                             },
                                             // TODO: Add events to a queue for poll
                                             _ => ()
@@ -130,8 +149,10 @@ macro_rules! mist_service {
                                     }
 
                                     mist_set_error!("Timeout calling function");
-                                    None
+                                    return Err(Error::Mist(MistError::Timeout));
                                 )?
+
+                                mist_service!{__fallback_ty_ret$(,$return_ty)?}
                             }
                         )*
                 }
@@ -213,14 +234,17 @@ macro_rules! mist_service {
                                             #[allow(unused_variables)]
                                             let ret = self.service.$call_name($($arg),*);
 
-                                            $(
+
                                                 // Use the $return_ty so we can ensure this is a function which has a return value
-                                                let ret: $return_ty = ret;
-                                                let msg = MistServiceToLibrary::Result(MistServiceToLibraryResult::$call_name(ret));
+                                                let ret: Result<mist_service!(__fallback_ty$(,$return_ty)?), Error> = ret;
+                                                let msg = MistServiceToLibrary::Result(match ret {
+                                                    #[allow(unused_variables)] // This is unused for functions which return an unit
+                                                    Ok(res) => Ok(mist_service!{__fallback_ty_ret, $call_name, res $(,$return_ty)?}),
+                                                    Err(err) => Err(err)
+                                                }); //(ret)));
                                                 if let Err(err) = self.write_data(&msg) {
                                                     eprintln!("[mist] Error replying to library call in subprocess: {}", err);
                                                 }
-                                            )?
                                         }
                                     )*)*
                                 }
@@ -252,7 +276,7 @@ macro_rules! mist_service {
             #[derive(Serialize, Deserialize, Eq, PartialEq)]
             pub enum MistServiceToLibraryResult {
                 $($(
-                    $call_name($($return_ty)?)
+                    $call_name $( ($return_ty) )?
                 ),*),*
             }
 
@@ -260,7 +284,94 @@ macro_rules! mist_service {
             pub enum MistServiceToLibrary {
                 Initialized,
                 InitError(String),
-                Result(MistServiceToLibraryResult)
+                Result(Result<MistServiceToLibraryResult, Error>)
+            }
+        }
+    }
+}
+
+macro_rules! mist_errors {
+    (__format, $out:expr, $kind:ident, $err:ident, $err_code:expr) => {
+        $out.push_str(&format!("{}Error_{} = {}", stringify!($kind), stringify!($err), $err_code));
+    };
+    (__format, $out:expr, $kind:ident, $err:ident) => {
+        $out.push_str(&format!("{}Error_{}", stringify!($kind), stringify!($err)));
+    };
+    ($($kind:ident: $code:literal { $($err:ident $(= $err_code:literal)*),* }),*) => {
+        paste::paste! {
+            #[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
+            pub enum Error {
+                $($kind([<$kind Error>])),+
+            }
+
+            #[repr(u16)]
+            pub enum MistResultCode {
+                #[allow(dead_code)]
+                Success = 0,
+                $($kind = $code),+
+            }
+
+            $(
+                #[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
+                #[repr(u16)]
+                pub enum [<$kind Error>] {
+                    $(
+                        $err$( = $err_code)*
+                    ),*
+                }
+            )*
+
+
+            impl From<Error> for MistResult {
+                fn from(err: Error) -> Self {
+                    match err {
+                        $(
+                            Error::$kind(err) => (MistResultCode::$kind as MistResult | (err as MistResult) << 16)
+                        ),*
+                    }
+                }
+            }
+
+            // Needed for subprocess unwrap
+            impl From<Error> for std::result::Result<(), Error> {
+                fn from(err: Error) -> Self {
+                    Err(err)
+                }
+            }
+
+            // This will get LTO'd on normal builds so it should be fine
+            // Called from generate headers tool
+            #[allow(dead_code)]
+            pub fn generate_header() -> String {
+                let mut out: String = "enum {\n\tMistResult_Success = 0".into();
+
+                $(
+                    out.push_str(&format!(",\n\tMistResult_{} = {}", stringify!($kind), $code));
+                )*
+
+                out.push_str("\n};\n\n");
+
+                $(
+                    out.push_str("enum {\n\t");
+                    let mut first = true;
+
+                    $(
+                        #[allow(unused_assignments)]
+                        if first {
+                            first = false;
+                        } else {
+                            out.push_str(",\n\t");
+                        }
+
+                        mist_errors!(__format, out, $kind, $err $(,$err_code)*);
+                    )*
+
+                    out.push_str("\n};\n\n");
+                )*
+
+                out.pop(); // Remove last newline
+
+                out
             }
         }
     }

@@ -1,7 +1,7 @@
 use anyhow::Result;
 use std::time::Duration;
 
-use crate::service::*;
+use crate::{result::Error, service::*};
 
 pub fn run() -> Result<()> {
     // Setup the service context which is avaliable to all the service calls
@@ -50,8 +50,10 @@ mod friends;
 mod utils;
 
 impl MistServiceInternal for MistServerService {
-    fn exit(&mut self) {
+    fn exit(&mut self) -> Result<(), Error> {
         self.should_exit = true;
+
+        Ok(())
     }
 }
 
