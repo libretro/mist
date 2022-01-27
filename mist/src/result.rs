@@ -23,5 +23,8 @@ mist_errors! {
     },
     SteamApps: 100 {
         InvalidDlcIndex = 0
+    },
+    SteamFriends: 105 {
+        InvalidRichPresence = 0
     }
 }

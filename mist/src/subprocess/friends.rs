@@ -1,7 +1,10 @@
 use std::ffi::CString;
 
 use super::MistServerService;
-use crate::{result::Error, service::MistServiceFriends};
+use crate::{
+    result::{Error, SteamFriendsError},
+    service::MistServiceFriends,
+};
 
 // ISteamFriends
 impl MistServiceFriends for MistServerService {
@@ -12,7 +15,7 @@ impl MistServiceFriends for MistServerService {
 
         Ok(())
     }
-    fn set_rich_presence(&mut self, key: String, value: Option<String>) -> Result<bool, Error> {
+    fn set_rich_presence(&mut self, key: String, value: Option<String>) -> Result<(), Error> {
         // Turn the string into a c null terminated string
         let c_key = CString::new(key).unwrap_or_default();
 
@@ -20,7 +23,7 @@ impl MistServiceFriends for MistServerService {
         // value can be None (NULL) to clear it
         unsafe { PRESENCE_VALUE = value.map(|val| CString::new(val).ok()).flatten() }
 
-        Ok(unsafe {
+        if unsafe {
             steamworks_sys::SteamAPI_ISteamFriends_SetRichPresence(
                 self.steam_friends,
                 c_key.as_ptr() as *const _,
@@ -30,6 +33,10 @@ impl MistServiceFriends for MistServerService {
                     .map(|v| v.as_ptr() as *const _)
                     .unwrap_or(std::ptr::null()),
             )
-        })
+        } {
+            Ok(())
+        } else {
+            Err(Error::SteamFriends(SteamFriendsError::InvalidRichPresence))
+        }
     }
 }

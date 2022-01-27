@@ -1,7 +1,8 @@
 enum {
 	MistResult_Success = 0,
 	MistResult_Mist = 1,
-	MistResult_SteamApps = 100
+	MistResult_SteamApps = 100,
+	MistResult_SteamFriends = 105
 };
 
 enum {
@@ -19,4 +20,8 @@ enum {
 
 enum {
 	SteamAppsError_InvalidDlcIndex = 0
+};
+
+enum {
+	SteamFriendsError_InvalidRichPresence = 0
 };

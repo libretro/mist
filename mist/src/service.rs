@@ -35,7 +35,7 @@ mist_service!(
     // ISteamFriends
     Friends {
         fn clear_rich_presence();
-        fn set_rich_presence(key: String, value: Option<String>) -> bool;
+        fn set_rich_presence(key: String, value: Option<String>);
     }
 
     // ISteamUtils
