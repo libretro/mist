@@ -28,7 +28,8 @@ pub fn mist_set_error(err: &str) {
     unsafe { LAST_ERROR = Some(CString::new(err).unwrap()) };
 }
 
-/// Init mist, this is throwns an error if it was already initialised, returns false on error
+/// Init mist, this is throwns an error if it was already initialised
+/// Returns MistResult
 #[no_mangle]
 pub extern "C" fn mist_subprocess_init() -> MistResult {
     let result = std::panic::catch_unwind(lib_subprocess::mist_init_subprocess);
@@ -57,7 +58,8 @@ pub extern "C" fn mist_geterror() -> *const c_char {
     }
 }
 
-/// Polls the subprocess, returns false on error
+/// Polls the subprocess
+/// Returns MistResult
 #[no_mangle]
 pub extern "C" fn mist_poll() -> MistResult {
     let _subprocess = get_subprocess!();
@@ -68,6 +70,8 @@ pub extern "C" fn mist_poll() -> MistResult {
 mod apps;
 #[path = "../lib/friends.rs"]
 mod friends;
+#[path = "../lib/remote_storage.rs"]
+mod remote_storage;
 #[path = "../lib/utils.rs"]
 mod utils;
 

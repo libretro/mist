@@ -114,7 +114,7 @@ macro_rules! mist_service {
                 }
 
                 $(
-                    pub fn [< $module:lower >](&mut self) -> &mut dyn [<MistClient $module>] {
+                    pub fn [< $module:snake >](&mut self) -> &mut dyn [<MistClient $module>] {
                         self
                     }
                 )*

@@ -3,7 +3,7 @@ use std::{ffi::CStr, os::raw::c_char};
 use crate::result::{MistResult, Success};
 
 /// Clears the rich presence key/value store
-/// Returns false on error
+/// Returns MistResult
 #[no_mangle]
 pub extern "C" fn mist_friends_clear_rich_presence() -> MistResult {
     let subprocess = get_subprocess!();
@@ -14,7 +14,7 @@ pub extern "C" fn mist_friends_clear_rich_presence() -> MistResult {
 
 /// Sets the rich presence key/value
 /// Value can be NULL to clear the key
-/// Returns false on error
+/// Returns MistResult
 #[no_mangle]
 pub extern "C" fn mist_friends_set_rich_presence(
     key: *const c_char,

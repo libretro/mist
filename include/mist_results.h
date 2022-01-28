@@ -2,7 +2,8 @@ enum {
 	MistResult_Success = 0,
 	MistResult_Mist = 1,
 	MistResult_SteamApps = 100,
-	MistResult_SteamFriends = 105
+	MistResult_SteamFriends = 105,
+	MistResult_SteamRemoteStorage = 123
 };
 
 enum {
@@ -24,4 +25,9 @@ enum {
 
 enum {
 	SteamFriendsError_InvalidRichPresence = 0
+};
+
+enum {
+	SteamRemoteStorageError_FileWriteBatchAlreadyInProgress = 0,
+	SteamRemoteStorageError_FileWriteBatchNotInProgress
 };

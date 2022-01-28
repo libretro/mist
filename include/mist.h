@@ -30,7 +30,8 @@ typedef uint64_t SteamId;
 typedef uint32_t DepotId;
 
 /**
- * Init mist, this is throwns an error if it was already initialised, returns false on error
+ * Init mist, this is throwns an error if it was already initialised
+ * Returns MistResult
  */
 MistResult mist_subprocess_init(void);
 
@@ -40,7 +41,8 @@ MistResult mist_subprocess_init(void);
 const char *mist_geterror(void);
 
 /**
- * Polls the subprocess, returns false on error
+ * Polls the subprocess
+ * Returns MistResult
  */
 MistResult mist_poll(void);
 
@@ -51,112 +53,112 @@ MistResult mist_subprocess_deinit(void);
 
 /**
  * Get the metadata for the dlc by dlc index
- * Returns false on error
+ * Returns MistResult
  * dlc_data is only guaranteed to be valid til the next time the function is called
  */
 MistResult mist_apps_get_dlc_data_by_index(int32_t dlc, struct MistDlcData *dlc_data);
 
 /**
  * Checks if an app with the appid is installed
- * Returns false on error
+ * Returns MistResult
  */
 MistResult mist_apps_is_app_installed(AppId app_id, bool *installed);
 
 /**
  * Checks if the app is running in a cybercafe
- * Returns false on error
+ * Returns MistResult
  */
 MistResult mist_apps_is_cybercafe(bool *is_cybercafe);
 
 /**
  * Checks if a dlc with the appid is installed
- * Returns false on error
+ * Returns MistResult
  */
 MistResult mist_apps_is_dlc_installed(AppId app_id, bool *installed);
 
 /**
  * Checks if low violence mode is set
- * Returns false on error
+ * Returns MistResult
  */
 MistResult mist_apps_is_low_violence(bool *is_low_violence);
 
 /**
  * Checks if the active user is subscribed to the current app
- * Returns false on error
+ * Returns MistResult
  */
 MistResult mist_apps_is_subscribed(bool *is_subscribed);
 
 /**
  * Checks if the active user is subscribed to the app id
- * Returns false on error
+ * Returns MistResult
  */
 MistResult mist_apps_is_subscribed_app(AppId app_id, bool *is_subscribed);
 
 /**
  * Checks if the active user is subscribed from family sharing
- * Returns false on error
+ * Returns MistResult
  */
 MistResult mist_apps_is_subscribed_from_family_sharing(bool *is_subscribed_from_family_sharing);
 
 /**
  * Checks if the active user is subscribed from free weekend
- * Returns false on error
+ * Returns MistResult
  */
 MistResult mist_apps_is_subscribed_from_free_weekend(bool *is_subscribed_from_free_weekend);
 
 /**
  * Checks if the user has a VAC ban
- * Returns false on error
+ * Returns MistResult
  */
 MistResult mist_apps_is_vac_banned(bool *is_vac_banned);
 
 /**
  * Get the current build id of the application
- * Returns false on error
+ * Returns MistResult
  */
 MistResult mist_apps_get_app_build_id(BuildId *build_id);
 
 /**
  * Get the install dir of the app to the app id provided
- * Returns false on error
+ * Returns MistResult
  * app_install_dir is only guaranteed to be valid til the next time the function is called
  */
 MistResult mist_apps_get_app_install_dir(AppId app_id, const char **app_install_dir);
 
 /**
  * Get the steam id of the owner of the application
- * Returns false on error
+ * Returns MistResult
  */
 MistResult mist_apps_get_app_owner(SteamId *steam_id);
 
 /**
  * Get a comma seperated list of the avaliable game languages
- * Returns false on error
+ * Returns MistResult
  */
 MistResult mist_apps_get_available_game_languages(const char **avaliable_languages);
 
 /**
  * Get the name of the current beta, sets it to NULL if on the default beta/branch
  * current_beta_name is only guaranteed to be valid til the next time the function is called
- * Returns false on error
+ * Returns MistResult
  */
 MistResult mist_apps_get_current_beta_name(const char **current_beta_name);
 
 /**
  * Get the current game language
- * Returns false on error
+ * Returns MistResult
  */
 MistResult mist_apps_get_current_game_language(const char **current_game_language);
 
 /**
  * Get the dlc count used for getting the dlc info by index
- * Returns false on error
+ * Returns MistResult
  */
 MistResult mist_apps_get_dlc_count(int32_t *dlc_count);
 
 /**
  * Get the download progress of a dlc
- * Returns false on error
+ * Returns MistResult
  */
 MistResult mist_apps_get_dlc_download_progress(AppId app_id,
                                                bool *downloading,
@@ -165,13 +167,13 @@ MistResult mist_apps_get_dlc_download_progress(AppId app_id,
 
 /**
  * Get earliest purchase time for the application in unix time
- * Returns false on error
+ * Returns MistResult
  */
 MistResult mist_apps_get_earliest_purchase_unix_time(AppId app_id, uint32_t *purchase_time);
 
 /**
  * Writes the installed depots into a pre-allocated array named depots, sets installed_depots to the amount of depots written
- * Returns false on error
+ * Returns MistResult
  */
 MistResult mist_apps_get_installed_depots(AppId app_id,
                                           DepotId *depots,
@@ -183,45 +185,59 @@ MistResult mist_apps_get_launch_command_line(const char **launch_command_line);
 /**
  * Get the value of the launch query param, sets it to NULL if it does not exist
  * The value is only guaranteed to be valid til the next time the function is called
- * Returns false on error
+ * Returns MistResult
  */
 MistResult mist_apps_get_launch_query_param(const char *key, const char **value);
 
 /**
  * Request the dlc for the app id to be installed
- * Returns false on error
+ * Returns MistResult
  */
 MistResult mist_apps_install_dlc(AppId app_id);
 
 /**
  * Request a force verify of the game
  * Set missing files only to signal that a update might have been pushed
- * Returns false on error
+ * Returns MistResult
  */
 MistResult mist_apps_mark_content_corrupt(bool missing_files_only);
 
 /**
  * Request the dlc for the app id to be uninstalled
- * Returns false on error
+ * Returns MistResult
  */
 MistResult mist_apps_uninstall_dlc(AppId app_id);
 
 /**
  * Clears the rich presence key/value store
- * Returns false on error
+ * Returns MistResult
  */
 MistResult mist_friends_clear_rich_presence(void);
 
 /**
  * Sets the rich presence key/value
  * Value can be NULL to clear the key
- * Returns false on error
+ * Returns MistResult
  */
 MistResult mist_friends_set_rich_presence(const char *key, const char *value);
 
 /**
+ * Begins a file write batch, use file write batches when saving files that gets stored in Steam Cloud.
+ * Will error if there is already a file write batch operation in progress.
+ * Returns MistResult
+ */
+MistResult mist_remote_storage_begin_file_write_batch(void);
+
+/**
+ * Ends a file write batch
+ * Will error if there is no file write batch operation in progress.
+ * Returns MistResult
+ */
+MistResult mist_remote_storage_end_file_write_batch(void);
+
+/**
  * Returns the appid of the running application
- * Returns
+ * Returns MistResult
  */
 MistResult mist_utils_get_appid(uint32_t *app_id);
 

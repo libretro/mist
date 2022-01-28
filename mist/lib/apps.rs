@@ -17,7 +17,7 @@ pub struct MistDlcData {
 }
 
 /// Get the metadata for the dlc by dlc index
-/// Returns false on error
+/// Returns MistResult
 /// dlc_data is only guaranteed to be valid til the next time the function is called
 #[no_mangle]
 pub extern "C" fn mist_apps_get_dlc_data_by_index(
@@ -45,7 +45,7 @@ pub extern "C" fn mist_apps_get_dlc_data_by_index(
 }
 
 /// Checks if an app with the appid is installed
-/// Returns false on error
+/// Returns MistResult
 #[no_mangle]
 pub extern "C" fn mist_apps_is_app_installed(app_id: AppId, installed: *mut bool) -> MistResult {
     let subprocess = get_subprocess!();
@@ -57,7 +57,7 @@ pub extern "C" fn mist_apps_is_app_installed(app_id: AppId, installed: *mut bool
 }
 
 /// Checks if the app is running in a cybercafe
-/// Returns false on error
+/// Returns MistResult
 #[no_mangle]
 pub extern "C" fn mist_apps_is_cybercafe(is_cybercafe: *mut bool) -> MistResult {
     let subprocess = get_subprocess!();
@@ -67,7 +67,7 @@ pub extern "C" fn mist_apps_is_cybercafe(is_cybercafe: *mut bool) -> MistResult 
 }
 
 /// Checks if a dlc with the appid is installed
-/// Returns false on error
+/// Returns MistResult
 #[no_mangle]
 pub extern "C" fn mist_apps_is_dlc_installed(app_id: AppId, installed: *mut bool) -> MistResult {
     let subprocess = get_subprocess!();
@@ -78,7 +78,7 @@ pub extern "C" fn mist_apps_is_dlc_installed(app_id: AppId, installed: *mut bool
 }
 
 /// Checks if low violence mode is set
-/// Returns false on error
+/// Returns MistResult
 #[no_mangle]
 pub extern "C" fn mist_apps_is_low_violence(is_low_violence: *mut bool) -> MistResult {
     let subprocess = get_subprocess!();
@@ -89,7 +89,7 @@ pub extern "C" fn mist_apps_is_low_violence(is_low_violence: *mut bool) -> MistR
 }
 
 /// Checks if the active user is subscribed to the current app
-/// Returns false on error
+/// Returns MistResult
 #[no_mangle]
 pub extern "C" fn mist_apps_is_subscribed(is_subscribed: *mut bool) -> MistResult {
     let subprocess = get_subprocess!();
@@ -98,7 +98,7 @@ pub extern "C" fn mist_apps_is_subscribed(is_subscribed: *mut bool) -> MistResul
 }
 
 /// Checks if the active user is subscribed to the app id
-/// Returns false on error
+/// Returns MistResult
 #[no_mangle]
 pub extern "C" fn mist_apps_is_subscribed_app(
     app_id: AppId,
@@ -112,7 +112,7 @@ pub extern "C" fn mist_apps_is_subscribed_app(
 }
 
 /// Checks if the active user is subscribed from family sharing
-/// Returns false on error
+/// Returns MistResult
 #[no_mangle]
 pub extern "C" fn mist_apps_is_subscribed_from_family_sharing(
     is_subscribed_from_family_sharing: *mut bool,
@@ -128,7 +128,7 @@ pub extern "C" fn mist_apps_is_subscribed_from_family_sharing(
 }
 
 /// Checks if the active user is subscribed from free weekend
-/// Returns false on error
+/// Returns MistResult
 #[no_mangle]
 pub extern "C" fn mist_apps_is_subscribed_from_free_weekend(
     is_subscribed_from_free_weekend: *mut bool,
@@ -142,7 +142,7 @@ pub extern "C" fn mist_apps_is_subscribed_from_free_weekend(
 }
 
 /// Checks if the user has a VAC ban
-/// Returns false on error
+/// Returns MistResult
 #[no_mangle]
 pub extern "C" fn mist_apps_is_vac_banned(is_vac_banned: *mut bool) -> MistResult {
     let subprocess = get_subprocess!();
@@ -151,7 +151,7 @@ pub extern "C" fn mist_apps_is_vac_banned(is_vac_banned: *mut bool) -> MistResul
 }
 
 /// Get the current build id of the application
-/// Returns false on error
+/// Returns MistResult
 #[no_mangle]
 pub extern "C" fn mist_apps_get_app_build_id(build_id: *mut BuildId) -> MistResult {
     let subprocess = get_subprocess!();
@@ -160,7 +160,7 @@ pub extern "C" fn mist_apps_get_app_build_id(build_id: *mut BuildId) -> MistResu
 }
 
 /// Get the install dir of the app to the app id provided
-/// Returns false on error
+/// Returns MistResult
 /// app_install_dir is only guaranteed to be valid til the next time the function is called
 #[no_mangle]
 pub extern "C" fn mist_apps_get_app_install_dir(
@@ -192,7 +192,7 @@ pub extern "C" fn mist_apps_get_app_install_dir(
 }
 
 /// Get the steam id of the owner of the application
-/// Returns false on error
+/// Returns MistResult
 #[no_mangle]
 pub extern "C" fn mist_apps_get_app_owner(steam_id: *mut SteamId) -> MistResult {
     let subprocess = get_subprocess!();
@@ -201,7 +201,7 @@ pub extern "C" fn mist_apps_get_app_owner(steam_id: *mut SteamId) -> MistResult 
 }
 
 /// Get a comma seperated list of the avaliable game languages
-/// Returns false on error
+/// Returns MistResult
 #[no_mangle]
 pub extern "C" fn mist_apps_get_available_game_languages(
     avaliable_languages: *mut *const c_char,
@@ -222,7 +222,7 @@ pub extern "C" fn mist_apps_get_available_game_languages(
 
 /// Get the name of the current beta, sets it to NULL if on the default beta/branch
 /// current_beta_name is only guaranteed to be valid til the next time the function is called
-/// Returns false on error
+/// Returns MistResult
 #[no_mangle]
 pub extern "C" fn mist_apps_get_current_beta_name(
     current_beta_name: *mut *const c_char,
@@ -247,7 +247,7 @@ pub extern "C" fn mist_apps_get_current_beta_name(
 }
 
 /// Get the current game language
-/// Returns false on error
+/// Returns MistResult
 #[no_mangle]
 pub extern "C" fn mist_apps_get_current_game_language(
     current_game_language: *mut *const c_char,
@@ -267,7 +267,7 @@ pub extern "C" fn mist_apps_get_current_game_language(
 }
 
 /// Get the dlc count used for getting the dlc info by index
-/// Returns false on error
+/// Returns MistResult
 #[no_mangle]
 pub extern "C" fn mist_apps_get_dlc_count(dlc_count: *mut i32) -> MistResult {
     let subprocess = get_subprocess!();
@@ -276,7 +276,7 @@ pub extern "C" fn mist_apps_get_dlc_count(dlc_count: *mut i32) -> MistResult {
 }
 
 /// Get the download progress of a dlc
-/// Returns false on error
+/// Returns MistResult
 #[no_mangle]
 pub extern "C" fn mist_apps_get_dlc_download_progress(
     app_id: AppId,
@@ -304,7 +304,7 @@ pub extern "C" fn mist_apps_get_dlc_download_progress(
 }
 
 /// Get earliest purchase time for the application in unix time
-/// Returns false on error
+/// Returns MistResult
 #[no_mangle]
 pub extern "C" fn mist_apps_get_earliest_purchase_unix_time(
     app_id: AppId,
@@ -324,7 +324,7 @@ pub extern "C" fn mist_apps_get_earliest_purchase_unix_time(
 //pub extern "C" fn mist_apps_get_file_details(file_name: String) -> ();
 
 /// Writes the installed depots into a pre-allocated array named depots, sets installed_depots to the amount of depots written
-/// Returns false on error
+/// Returns MistResult
 #[no_mangle]
 pub extern "C" fn mist_apps_get_installed_depots(
     app_id: AppId,
@@ -364,7 +364,7 @@ pub extern "C" fn mist_apps_get_launch_command_line(
 
 /// Get the value of the launch query param, sets it to NULL if it does not exist
 /// The value is only guaranteed to be valid til the next time the function is called
-/// Returns false on error
+/// Returns MistResult
 #[no_mangle]
 pub extern "C" fn mist_apps_get_launch_query_param(
     key: *const c_char,
@@ -391,7 +391,7 @@ pub extern "C" fn mist_apps_get_launch_query_param(
 }
 
 /// Request the dlc for the app id to be installed
-/// Returns false on error
+/// Returns MistResult
 #[no_mangle]
 pub extern "C" fn mist_apps_install_dlc(app_id: AppId) -> MistResult {
     let subprocess = get_subprocess!();
@@ -401,7 +401,7 @@ pub extern "C" fn mist_apps_install_dlc(app_id: AppId) -> MistResult {
 
 /// Request a force verify of the game
 /// Set missing files only to signal that a update might have been pushed
-/// Returns false on error
+/// Returns MistResult
 #[no_mangle]
 pub extern "C" fn mist_apps_mark_content_corrupt(missing_files_only: bool) -> MistResult {
     let subprocess = get_subprocess!();
@@ -413,7 +413,7 @@ pub extern "C" fn mist_apps_mark_content_corrupt(missing_files_only: bool) -> Mi
 }
 
 /// Request the dlc for the app id to be uninstalled
-/// Returns false on error
+/// Returns MistResult
 #[no_mangle]
 pub extern "C" fn mist_apps_uninstall_dlc(app_id: AppId) -> MistResult {
     let subprocess = get_subprocess!();

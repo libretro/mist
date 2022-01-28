@@ -38,6 +38,12 @@ mist_service!(
         fn set_rich_presence(key: String, value: Option<String>);
     }
 
+    // ISteamRemoteStorage
+    RemoteStorage {
+        fn begin_file_write_batch();
+        fn end_file_write_batch();
+    }
+
     // ISteamUtils
     Utils {
         fn get_appid() -> AppId;
