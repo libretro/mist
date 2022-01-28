@@ -1,7 +1,7 @@
 [package]
 name = "app_install_dir"
 version = "0.1.0"
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 steamworks-sys = { path = "../../steamworks-sys" }
