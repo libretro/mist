@@ -33,6 +33,7 @@ fn main() {
 
     if let Err(err) = subprocess::run() {
         eprintln!("[mist] Error while running subprocess: {}", err);
+        std::process::exit(1);
     }
 
     std::process::exit(0);
