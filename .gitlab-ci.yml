@@ -26,6 +26,7 @@ build-linux-x64:
   script:
     - *build_common_script
     - STEAMWORKS_SDK="$(pwd)/steamworks" cargo build --release --target=$RUST_TARGET --bin app_install_dir
+    - STEAMWORKS_SDK="$(pwd)/steamworks" cargo build --release --target=$RUST_TARGET --bin dialog
     - mkdir -p mist-linux-x64/mist
     - cp ./target/$RUST_TARGET/release/libmist.so ./mist-linux-x64
     - cp ./target/$RUST_TARGET/release/mist ./mist-linux-x64/mist
