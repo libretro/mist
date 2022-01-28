@@ -30,6 +30,7 @@ build-linux-x64:
     - cp ./target/$RUST_TARGET/release/libmist.so ./mist-linux-x64
     - cp ./target/$RUST_TARGET/release/mist ./mist-linux-x64/mist
     - cp ./target/$RUST_TARGET/release/app_install_dir ./mist-linux-x64/mist
+    - cp ./target/$RUST_TARGET/release/dialog ./mist-linux-x64/mist
     - cp ./steamworks/redistributable_bin/linux64/libsteam_api.so ./mist-linux-x64/mist
 
 build-windows-x64:

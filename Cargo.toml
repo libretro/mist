@@ -3,5 +3,6 @@ members = [
     "mist",
     "steamworks-sys",
     "tools/app_install_dir", # Workaround for linux
+    "tools/dialog",
     "tools/generate_headers"
 ]
