@@ -1,3 +1,5 @@
+#![allow(deprecated)]
+
 const DPI_SCALE_FACTOR: f32 = 1.75;
 
 use clap::Parser;
@@ -68,9 +70,57 @@ struct Option {
     label: String,
 }
 
-fn main() {
+fn main() -> Result<(), String> {
     let args = Args::parse();
-    let fullscreen = true;
+    let mut fullscreen = true;
+    let has_steamworks;
+
+    let sdl_context = sdl2::init().unwrap();
+    let game_controller_subsystem = sdl_context.game_controller().unwrap();
+
+    let available = game_controller_subsystem
+        .num_joysticks()
+        .map_err(|e| format!("can't enumerate joysticks: {}", e))
+        .unwrap();
+
+    let mut controllers = Vec::new();
+    for controller in 0..available {
+        if !game_controller_subsystem.is_game_controller(controller) {
+            break;
+        }
+
+        match game_controller_subsystem.open(controller) {
+            Ok(c) => {
+                eprintln!(
+                    "Opened \"{}\" game controller, mapping: {}",
+                    c.name(),
+                    c.mapping()
+                );
+                controllers.push(c);
+            }
+            Err(e) => {
+                eprintln!("failed to open game controller: {:?}", e);
+            }
+        }
+    }
+
+    unsafe {
+        has_steamworks = steamworks_sys::SteamAPI_Init();
+
+        if has_steamworks {
+            // Setup manual dispatch since we are not using c++ classes
+            steamworks_sys::SteamAPI_ManualDispatch_Init();
+
+            let utils = steamworks_sys::SteamAPI_SteamUtils_v010();
+            if !steamworks_sys::SteamAPI_ISteamUtils_IsSteamInBigPictureMode(utils)
+                && !steamworks_sys::SteamAPI_ISteamUtils_IsSteamRunningOnSteamDeck(utils)
+            {
+                fullscreen = false;
+            }
+        } else {
+            eprintln!("error initializing steamworks");
+        }
+    };
 
     let mut options = Vec::new();
 
@@ -111,7 +161,7 @@ fn main() {
         });
     }
 
-    let event_loop = glutin::event_loop::EventLoop::with_user_event();
+    let event_loop = glutin::event_loop::EventLoop::new();
     let (gl_window, gl) = create_display(&event_loop, &args.title, fullscreen);
 
     let mut egui_glow = egui_glow::EguiGlow::new(&gl_window, &gl);
@@ -136,11 +186,12 @@ fn main() {
     }
 
     let mut first = true;
+
     event_loop.run(move |event, _, control_flow| {
         let mut redraw = || {
             let mut quit = false;
 
-            let (needs_repaint, shapes) = egui_glow.run(gl_window.window(), |egui_ctx| {
+            let (_needs_repaint, shapes) = egui_glow.run(gl_window.window(), |egui_ctx| {
                 let mut window = egui::Window::new("")
                     .collapsible(false)
                     .title_bar(false)
@@ -187,13 +238,69 @@ fn main() {
             });
 
             *control_flow = if quit {
+                // Get rid of steamworks
+                if has_steamworks {
+                    unsafe { steamworks_sys::SteamAPI_Shutdown() };
+                }
+
                 glutin::event_loop::ControlFlow::Exit
-            } else if needs_repaint {
+            } else {
                 gl_window.window().request_redraw();
                 glutin::event_loop::ControlFlow::Poll
-            } else {
-                glutin::event_loop::ControlFlow::Wait
             };
+
+            fn fake_press(
+                glow: &mut egui_glow::EguiGlow,
+                key: glutin::event::VirtualKeyCode,
+                shift: bool,
+            ) {
+                if shift {
+                    glow.on_event(&glutin::event::WindowEvent::ModifiersChanged(
+                        glutin::event::ModifiersState::SHIFT,
+                    ));
+                }
+
+                glow.on_event(&glutin::event::WindowEvent::KeyboardInput {
+                    device_id: unsafe { glutin::event::DeviceId::dummy() },
+                    input: glutin::event::KeyboardInput {
+                        scancode: 0,
+                        state: glutin::event::ElementState::Pressed,
+                        virtual_keycode: Some(key),
+                        modifiers: glutin::event::ModifiersState::empty(),
+                    },
+                    is_synthetic: false,
+                });
+
+                if shift {
+                    glow.on_event(&glutin::event::WindowEvent::ModifiersChanged(
+                        glutin::event::ModifiersState::empty(),
+                    ));
+                }
+            }
+
+            for event in sdl_context.event_pump().unwrap().poll_iter() {
+                use sdl2::event::Event;
+
+                match event {
+                    Event::ControllerButtonDown { button, .. } => match button {
+                        sdl2::controller::Button::DPadLeft => {
+                            fake_press(&mut egui_glow, glutin::event::VirtualKeyCode::Tab, true);
+                        }
+                        sdl2::controller::Button::DPadRight => {
+                            fake_press(&mut egui_glow, glutin::event::VirtualKeyCode::Tab, false);
+                        }
+                        sdl2::controller::Button::A => {
+                            fake_press(
+                                &mut egui_glow,
+                                glutin::event::VirtualKeyCode::Return,
+                                false,
+                            );
+                        }
+                        _ => {}
+                    },
+                    _ => (),
+                }
+            }
 
             {
                 unsafe {
@@ -204,10 +311,14 @@ fn main() {
 
                 egui_glow.paint(&gl_window, &gl, shapes);
 
+                // Setup DPI & highlight first button
                 if first {
                     egui_glow.egui_ctx.set_pixels_per_point(
                         egui_glow.egui_ctx.pixels_per_point() * DPI_SCALE_FACTOR,
                     );
+
+                    fake_press(&mut egui_glow, glutin::event::VirtualKeyCode::Tab, false);
+
                     first = false;
                 }
 
@@ -218,7 +329,6 @@ fn main() {
         match event {
             glutin::event::Event::RedrawEventsCleared if cfg!(windows) => redraw(),
             glutin::event::Event::RedrawRequested(_) if !cfg!(windows) => redraw(),
-
             glutin::event::Event::WindowEvent { event, .. } => {
                 use glutin::event::WindowEvent;
                 if matches!(event, WindowEvent::CloseRequested | WindowEvent::Destroyed) {
@@ -239,5 +349,7 @@ fn main() {
 
             _ => (),
         }
+
+        std::thread::yield_now();
     });
 }
