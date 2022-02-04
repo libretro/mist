@@ -7,11 +7,10 @@
 #include <stdlib.h>
 #include "mist_results.h"
 
-#define MIST_IS_SUCCESS(result) ((result & 0xFFFF)==0)
-#define MIST_IS_ERROR(result) ((result & 0xFFFF)!=0)
-#define MIST_RESULT(code, error) ((MistResult)error << 16 | (MistResult)code)
 #define MIST_ERROR(result) (result >> 16)
 #define MIST_RESULT_CODE(result) (result & 0xFFFF)
+#define MIST_IS_SUCCESS(result) (MIST_RESULT_CODE(result) == MistResult_Success)
+#define MIST_IS_ERROR(result) (!MIST_IS_SUCCESS(result))
 
 typedef uint32_t MistResult;
 
@@ -34,11 +33,6 @@ typedef uint32_t DepotId;
  * Returns MistResult
  */
 MistResult mist_subprocess_init(void);
-
-/**
- * Returns the latest error
- */
-const char *mist_geterror(void);
 
 /**
  * Polls the subprocess
@@ -239,6 +233,6 @@ MistResult mist_remote_storage_end_file_write_batch(void);
  * Returns the appid of the running application
  * Returns MistResult
  */
-MistResult mist_utils_get_appid(uint32_t *app_id);
+MistResult mist_utils_get_appid(AppId *app_id);
 
 #endif /* mist_h */

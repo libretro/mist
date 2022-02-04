@@ -1,7 +1,7 @@
-macro_rules! mist_set_error {
+macro_rules! mist_log_error {
     ($error:expr) => {
         #[cfg(not(feature = "steamworks"))]
-        crate::mist_set_error($error);
+        crate::mist_log_error($error);
         // TODO: Set the error in some way on the subprocess
         #[cfg(feature = "steamworks")]
         drop($error);
@@ -125,11 +125,9 @@ macro_rules! mist_service {
                     $(
 
                             fn $call_name(&mut self, $($arg : $arg_ty),*) -> Result<mist_service!(__fallback_ty$(,$return_ty)?), Error> {
-                                // Reset the error
-                                mist_set_error!("");
                                 let msg = MistLibraryToService::$call_name($($arg),*);
                                 if let Err(err) = self.write_data(&msg) {
-                                    mist_set_error!(&format!("Error writing data to subprocess: {}", err));
+                                    mist_log_error!(&format!("Error writing data to subprocess: {}", err));
                                     return Err(Error::Mist(MistError::SubprocessLost));
                                 }
 
@@ -151,7 +149,7 @@ macro_rules! mist_service {
                                         }
                                     }
 
-                                    mist_set_error!("Timeout calling function");
+                                    mist_log_error!("Timeout calling function");
                                     return Err(Error::Mist(MistError::Timeout));
 
                             }

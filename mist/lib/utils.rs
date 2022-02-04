@@ -1,9 +1,12 @@
-use crate::result::{MistResult, Success};
+use crate::{
+    result::{MistResult, Success},
+    types::AppId,
+};
 
 /// Returns the appid of the running application
 /// Returns MistResult
 #[no_mangle]
-pub extern "C" fn mist_utils_get_appid(app_id: *mut u32) -> MistResult {
+pub extern "C" fn mist_utils_get_appid(app_id: *mut AppId) -> MistResult {
     let subprocess = get_subprocess!();
 
     let id = unwrap_client_result!(subprocess.client().utils().get_appid());

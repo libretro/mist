@@ -185,7 +185,7 @@ pub extern "C" fn mist_apps_get_app_install_dir(
             unsafe {
                 APP_INSTALL_DIR = None;
             }
-            mist_set_error!(&format!("Invalid app id to get install dir: {}", app_id));
+            mist_log_error!(&format!("Invalid app id to get install dir: {}", app_id));
             Success
         }
     }
