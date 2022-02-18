@@ -12,6 +12,7 @@ serde_derive = "1.0"
 steamworks-sys = { path = "../steamworks-sys", optional = true } # Only include steamworks for the binary
 
 [features]
+codegen = ["steamworks"]
 steamworks = ["steamworks-sys"]
 
 [lib]

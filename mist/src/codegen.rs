@@ -365,6 +365,7 @@ macro_rules! mist_errors {
             // This will get LTO'd on normal builds so it should be fine
             // Called from generate headers tool
             #[allow(dead_code)]
+            #[cfg(feature = "codegen")]
             pub fn generate_header() -> String {
                 let mut out: String = "enum {\n\tMistResult_Success = 0".into();
 
@@ -413,11 +414,15 @@ macro_rules! mist_callbacks {
                 $(
                     #[derive(Serialize, Deserialize, PartialEq)]
                     #[repr(C)]
-                    pub struct [<MistCallback $module $callback_ident>] {
+                    pub struct [<MistCallback $callback_ident>] {
                         $($callback_field_ident: $callback_var_ty),*
                     }
                 )*
             )*
+
+            pub mod callbacks {
+                pub use super::{$($([<MistCallback $callback_ident>]),*),*};
+            }
 
             #[derive(Serialize, Deserialize, PartialEq)]
             pub struct MistCallback {
@@ -429,7 +434,7 @@ macro_rules! mist_callbacks {
             #[derive(Serialize, Deserialize, PartialEq)]
             pub enum MistCallbacks {
                 $($(
-                    [<$module $callback_ident>] ([<MistCallback $module $callback_ident>])
+                    [<$module $callback_ident>] ([<MistCallback $callback_ident>])
                 ),*),*
             }
 
@@ -449,7 +454,7 @@ macro_rules! mist_callbacks {
                                     Some(MistCallback {
                                         user,
                                         callback: callback_id,
-                                        data: MistCallbacks::[<$module $callback_ident>] ([<MistCallback $module $callback_ident>] {
+                                        data: MistCallbacks::[<$module $callback_ident>] ([<MistCallback $callback_ident>] {
                                             $($callback_field_ident: data.$callback_var_ident),*
                                         })
                                     })
@@ -458,6 +463,27 @@ macro_rules! mist_callbacks {
                         )*
                         _ => None
                     }
+                }
+
+                #[allow(dead_code)]
+                #[cfg(feature = "codegen")]
+                pub fn get_struct_callback(s: &str) -> u32 {
+                    match s {
+                        $($(stringify!([<MistCallback $callback_ident>]) => steamworks_sys::[<$callback_ident _t_k_iCallback>],)*)*
+                        _ => unreachable!()
+                    }
+                }
+
+                #[allow(dead_code)]
+                #[cfg(feature = "codegen")]
+                pub fn get_struct_idents() -> Vec<String> {
+                    let mut out = Vec::new();
+
+                    $($(
+                        out.push(stringify!([<MistCallback $callback_ident>]).into());
+                    )*)*
+
+                    out
                 }
             }
         }

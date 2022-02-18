@@ -1,6 +1,6 @@
 #[macro_use]
 mod codegen;
-mod callbacks;
+pub mod callbacks;
 mod consts;
 pub mod result;
 mod service;
@@ -8,7 +8,7 @@ mod service;
 mod lib_subprocess;
 mod types;
 
-pub use callbacks::MistCallbackMsg;
+use callbacks::MistCallbackMsg;
 use result::{Error, MistError, MistResult, Success};
 
 macro_rules! unwrap_client_result {
