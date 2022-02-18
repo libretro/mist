@@ -4,6 +4,7 @@ pub type AppId = u32;
 pub type BuildId = i32;
 pub type DepotId = u32;
 pub type SteamId = u64;
+pub type SteamUser = i32;
 
 #[derive(Serialize, Deserialize, Eq, PartialEq)]
 pub struct DlcData {

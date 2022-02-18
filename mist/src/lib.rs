@@ -1,5 +1,6 @@
 #[macro_use]
 mod codegen;
+mod callbacks;
 mod consts;
 pub mod result;
 mod service;
@@ -7,7 +8,8 @@ mod service;
 mod lib_subprocess;
 mod types;
 
-use crate::result::{Error, MistError, MistResult, Success};
+pub use callbacks::MistCallbackMsg;
+use result::{Error, MistError, MistResult, Success};
 
 macro_rules! unwrap_client_result {
     ($res:expr) => {
@@ -45,7 +47,53 @@ pub extern "C" fn mist_subprocess_init() -> MistResult {
 /// Returns MistResult
 #[no_mangle]
 pub extern "C" fn mist_poll() -> MistResult {
-    let _subprocess = get_subprocess!();
+    let subprocess = get_subprocess!();
+
+    unwrap_client_result!(subprocess.client().poll());
+
+    Success
+}
+
+/// Attempts to return the next callback, if none are left it will set p_callback to NULL
+/// Safety: The pointer is only valid until the next call of this function
+/// Returns MistResult
+#[no_mangle]
+pub extern "C" fn mist_next_callback(
+    has_callback: *mut bool,
+    p_callback: *mut MistCallbackMsg,
+) -> MistResult {
+    static mut HAS_PROCESSED_CALLBACK: bool = false;
+
+    let subprocess = get_subprocess!();
+
+    // Get the callback queue
+    let queue = subprocess.client().callbacks();
+
+    // Remove the previous callback
+    if unsafe { HAS_PROCESSED_CALLBACK } {
+        queue.pop_front();
+    } else {
+        unsafe {
+            HAS_PROCESSED_CALLBACK = true;
+        }
+    }
+
+    // Null the callback ptr ptr if the queue is empty
+    if let Some(front) = queue.front() {
+        unsafe {
+            *p_callback = MistCallbackMsg {
+                user: front.user,
+                callback: front.callback,
+                data: &front.data as *const _ as *const std::ffi::c_void,
+            };
+            *has_callback = true;
+        }
+    } else {
+        unsafe {
+            *has_callback = false;
+        }
+    }
+
     Success
 }
 

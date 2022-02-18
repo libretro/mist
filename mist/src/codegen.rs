@@ -59,6 +59,7 @@ macro_rules! mist_service {
 
             #[allow(dead_code)]
             pub struct MistClient<R: Read, W: Write> {
+                callbacks: std::collections::VecDeque<crate::callbacks::MistCallback>,
                 write: W,
                 pub receiver: std::sync::mpsc::Receiver<MistServiceToLibrary>,
                 _read: std::marker::PhantomData<R>,
@@ -98,6 +99,7 @@ macro_rules! mist_service {
                     });
 
                     MistClient {
+                        callbacks: std::collections::VecDeque::new(),
                         write,
                         receiver,
                         _read: std::marker::PhantomData,
@@ -111,6 +113,25 @@ macro_rules! mist_service {
                     self.write.write_all(&payload)?;
                     self.write.flush()?;
                     Ok(())
+                }
+
+                pub fn poll(&mut self) -> Result<(), Error> {
+                    while let Ok(data) = self.receiver.try_recv() {
+                        match data {
+                            MistServiceToLibrary::Initialized => unreachable!(),
+                            MistServiceToLibrary::InitError(_) => unreachable!(),
+                            MistServiceToLibrary::Callback(callback) => {
+                                self.callbacks.push_back(callback);
+                            },
+                            MistServiceToLibrary::Result(_) => {}
+                        }
+                    }
+
+                    Ok(())
+                }
+
+                pub fn callbacks(&mut self) -> &mut std::collections::VecDeque<crate::callbacks::MistCallback> {
+                    &mut self.callbacks
                 }
 
                 $(
@@ -131,27 +152,29 @@ macro_rules! mist_service {
                                     return Err(Error::Mist(MistError::SubprocessLost));
                                 }
 
-
-                                    while let Ok(data) = self.receiver.recv_timeout(std::time::Duration::from_millis(100)) {
-                                        match data {
-                                            MistServiceToLibrary::Result(Ok(mist_service!{__fallback_ty_ret, $call_name, res $(,$return_ty)?})) => {
-                                                $(
-                                                    let res: $return_ty = res;
-                                                    return Ok(res);
-                                                )?
-                                                mist_service!{__fallback_ty_ret$(,$return_ty)?}
-                                            },
-                                            MistServiceToLibrary::Result(Err(err)) => {
-                                                return Err(err);
-                                            },
-                                            // TODO: Add events to a queue for poll
-                                            _ => ()
-                                        }
+                                while let Ok(data) = self.receiver.recv_timeout(std::time::Duration::from_millis(100)) {
+                                    match data {
+                                        MistServiceToLibrary::Initialized => unreachable!(),
+                                        MistServiceToLibrary::InitError(_) => unreachable!(),
+                                        MistServiceToLibrary::Callback(callback) => {
+                                            self.callbacks.push_back(callback);
+                                        },
+                                        MistServiceToLibrary::Result(Ok(mist_service!{__fallback_ty_ret, $call_name, res $(,$return_ty)?})) => {
+                                            $(
+                                                let res: $return_ty = res;
+                                                return Ok(res);
+                                            )?
+                                            mist_service!{__fallback_ty_ret$(,$return_ty)?}
+                                        },
+                                        MistServiceToLibrary::Result(Err(err)) => {
+                                            return Err(err);
+                                        },
+                                        MistServiceToLibrary::Result(_) => {}
                                     }
+                                }
 
-                                    mist_log_error!("Timeout calling function");
-                                    return Err(Error::Mist(MistError::Timeout));
-
+                                mist_log_error!("Timeout calling function");
+                                return Err(Error::Mist(MistError::Timeout));
                             }
                         )*
                 }
@@ -272,7 +295,7 @@ macro_rules! mist_service {
             }
 
             #[allow(non_camel_case_types)]
-            #[derive(Serialize, Deserialize, Eq, PartialEq)]
+            #[derive(Serialize, Deserialize, PartialEq)]
             pub enum MistServiceToLibraryResult {
                 $($(
                     $call_name $( ($return_ty) )?
@@ -283,6 +306,7 @@ macro_rules! mist_service {
             pub enum MistServiceToLibrary {
                 Initialized,
                 InitError(String),
+                Callback(crate::callbacks::MistCallback),
                 Result(Result<MistServiceToLibraryResult, Error>)
             }
         }
@@ -371,6 +395,70 @@ macro_rules! mist_errors {
                 out.pop(); // Remove last newline
 
                 out
+            }
+        }
+    }
+}
+
+macro_rules! mist_callbacks {
+    ($($module:ident {
+        $($callback_ident:ident {
+            $($callback_var_ident:ident => $callback_field_ident:ident: $callback_var_ty:ty),*
+        }),*
+    }),*) => {
+        paste::paste! {
+            use serde_derive::{Serialize, Deserialize};
+
+            $(
+                $(
+                    #[derive(Serialize, Deserialize, PartialEq)]
+                    #[repr(C)]
+                    pub struct [<MistCallback $module $callback_ident>] {
+                        $($callback_field_ident: $callback_var_ty),*
+                    }
+                )*
+            )*
+
+            #[derive(Serialize, Deserialize, PartialEq)]
+            pub struct MistCallback {
+                pub user: SteamUser,
+                pub callback: u32,
+                pub data: MistCallbacks
+            }
+
+            #[derive(Serialize, Deserialize, PartialEq)]
+            pub enum MistCallbacks {
+                $($(
+                    [<$module $callback_ident>] ([<MistCallback $module $callback_ident>])
+                ),*),*
+            }
+
+            #[cfg(feature = "steamworks")]
+            impl MistCallback {
+                #[allow(dead_code)] // It is actually used, no idea why rust-analyzer thinks otherwise
+                pub fn from_steam_callback(user: SteamUser, callback: &steamworks_sys::CallbackMsg_t) -> Option<MistCallback> {
+                    let callback_id = callback.m_iCallback as u32;
+                    match callback_id {
+                        $(
+                            $(
+                               steamworks_sys::[<$callback_ident _t_k_iCallback>] => {
+                                    let data_ptr: *const steamworks_sys::[<$callback_ident _t>] = callback.m_pubParam as *const _;
+                                    #[allow(unused_variables)] // This can be unused if the struct has no fields
+                                    let data = unsafe { &*data_ptr };
+
+                                    Some(MistCallback {
+                                        user,
+                                        callback: callback_id,
+                                        data: MistCallbacks::[<$module $callback_ident>] ([<MistCallback $module $callback_ident>] {
+                                            $($callback_field_ident: data.$callback_var_ident),*
+                                        })
+                                    })
+                               },
+                            ),*
+                        )*
+                        _ => None
+                    }
+                }
             }
         }
     }

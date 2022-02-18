@@ -1,5 +1,6 @@
 #[macro_use]
 mod codegen;
+mod callbacks;
 mod consts;
 mod result;
 mod service;

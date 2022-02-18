@@ -14,6 +14,14 @@
 
 typedef uint32_t MistResult;
 
+typedef int32_t SteamUser;
+
+typedef struct MistCallbackMsg {
+  SteamUser user;
+  uint32_t callback;
+  const void *data;
+} MistCallbackMsg;
+
 typedef uint32_t AppId;
 
 typedef struct MistDlcData {
@@ -39,6 +47,13 @@ MistResult mist_subprocess_init(void);
  * Returns MistResult
  */
 MistResult mist_poll(void);
+
+/**
+ * Attempts to return the next callback, if none are left it will set p_callback to NULL
+ * Safety: The pointer is only valid until the next call of this function
+ * Returns MistResult
+ */
+MistResult mist_next_callback(bool *has_callback, struct MistCallbackMsg *p_callback);
 
 /**
  * Deinits the mist subprocess, returns false on error
