@@ -5,7 +5,8 @@ accepted = [
     "MIT",
     "ISC",
     "CC0-1.0",
-    "Zlib"
+    "Zlib",
+    "MPL-2.0"
 ]
 
 ignore-build-dependencies = true
