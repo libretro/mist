@@ -67,9 +67,11 @@ package:
     - rm -rf mist/ && mkdir -p mist/
     # Linux
     - cp -r ./mist-linux-x64 ./mist/
+    - cp -r ./include ./mist/mist-linux-x64
     - cp ./LICENSE ./mist/mist-linux-x64/mist/mist-LICENSE.txt
     - cp ./mist-ThirdPartyLicenses.txt ./mist/mist-linux-x64/mist/
     # Windows
     - cp -r ./mist-windows-x64 ./mist/
+    - cp -r ./include ./mist/mist-windows-x64
     - cp ./LICENSE ./mist/mist-windows-x64/mist/mist-LICENSE.txt
     - cp ./mist-ThirdPartyLicenses.txt ./mist/mist-windows-x64/mist/
