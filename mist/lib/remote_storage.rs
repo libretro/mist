@@ -4,12 +4,12 @@ use crate::result::{MistResult, Success};
 /// Will error if there is already a file write batch operation in progress.
 /// Returns MistResult
 #[no_mangle]
-pub extern "C" fn mist_remote_storage_begin_file_write_batch() -> MistResult {
+pub extern "C" fn mist_steam_remote_storage_begin_file_write_batch() -> MistResult {
     let subprocess = get_subprocess!();
 
     unwrap_client_result!(subprocess
         .client()
-        .remote_storage()
+        .steam_remote_storage()
         .begin_file_write_batch());
 
     Success
@@ -19,10 +19,13 @@ pub extern "C" fn mist_remote_storage_begin_file_write_batch() -> MistResult {
 /// Will error if there is no file write batch operation in progress.
 /// Returns MistResult
 #[no_mangle]
-pub extern "C" fn mist_remote_storage_end_file_write_batch() -> MistResult {
+pub extern "C" fn mist_steam_remote_storage_end_file_write_batch() -> MistResult {
     let subprocess = get_subprocess!();
 
-    unwrap_client_result!(subprocess.client().remote_storage().end_file_write_batch());
+    unwrap_client_result!(subprocess
+        .client()
+        .steam_remote_storage()
+        .end_file_write_batch());
 
     Success
 }

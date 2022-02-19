@@ -3,12 +3,12 @@ use std::ffi::{CStr, CString};
 use super::MistServerService;
 use crate::{
     result::{Error, SteamAppsError},
-    service::MistServiceApps,
+    service::MistServiceSteamApps,
     types::*,
 };
 
 // ISteamApps
-impl MistServiceApps for MistServerService {
+impl MistServiceSteamApps for MistServerService {
     fn get_dlc_data_by_index(&mut self, dlc: i32) -> Result<DlcData, Error> {
         let mut app_id = 0;
         let mut avaliable = false;

@@ -3,11 +3,11 @@ use std::ffi::CString;
 use super::MistServerService;
 use crate::{
     result::{Error, SteamFriendsError},
-    service::MistServiceFriends,
+    service::MistServiceSteamFriends,
 };
 
 // ISteamFriends
-impl MistServiceFriends for MistServerService {
+impl MistServiceSteamFriends for MistServerService {
     fn clear_rich_presence(&mut self) -> Result<(), Error> {
         unsafe {
             steamworks_sys::SteamAPI_ISteamFriends_ClearRichPresence(self.steam_friends);

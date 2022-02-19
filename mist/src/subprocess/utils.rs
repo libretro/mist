@@ -1,8 +1,8 @@
 use super::MistServerService;
-use crate::{result::Error, service::MistServiceUtils, types::*};
+use crate::{result::Error, service::MistServiceSteamUtils, types::*};
 
 // ISteamUtils
-impl MistServiceUtils for MistServerService {
+impl MistServiceSteamUtils for MistServerService {
     fn get_appid(&mut self) -> Result<AppId, Error> {
         Ok(unsafe { steamworks_sys::SteamAPI_ISteamUtils_GetAppID(self.steam_utils) })
     }

@@ -3,7 +3,7 @@ use crate::types::*;
 // Service calls for the subprocess
 mist_service!(
     // ISteamApps
-    Apps {
+    SteamApps {
         fn get_dlc_data_by_index(dlc: i32) -> DlcData;
         fn is_app_installed(app_id: AppId) -> bool;
         fn is_cybercafe() -> bool;
@@ -33,19 +33,19 @@ mist_service!(
     }
 
     // ISteamFriends
-    Friends {
+    SteamFriends {
         fn clear_rich_presence();
         fn set_rich_presence(key: String, value: Option<String>);
     }
 
     // ISteamRemoteStorage
-    RemoteStorage {
+    SteamRemoteStorage {
         fn begin_file_write_batch();
         fn end_file_write_batch();
     }
 
     // ISteamUtils
-    Utils {
+    SteamUtils {
         fn get_appid() -> AppId;
         fn is_steam_running_on_steam_deck() -> bool;
     }

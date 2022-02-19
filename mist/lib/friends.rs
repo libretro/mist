@@ -5,9 +5,9 @@ use crate::result::{MistResult, Success};
 /// Clears the rich presence key/value store
 /// Returns MistResult
 #[no_mangle]
-pub extern "C" fn mist_friends_clear_rich_presence() -> MistResult {
+pub extern "C" fn mist_steam_friends_clear_rich_presence() -> MistResult {
     let subprocess = get_subprocess!();
-    unwrap_client_result!(subprocess.client().friends().clear_rich_presence());
+    unwrap_client_result!(subprocess.client().steam_friends().clear_rich_presence());
 
     Success
 }
@@ -16,7 +16,7 @@ pub extern "C" fn mist_friends_clear_rich_presence() -> MistResult {
 /// Value can be NULL to clear the key
 /// Returns MistResult
 #[no_mangle]
-pub extern "C" fn mist_friends_set_rich_presence(
+pub extern "C" fn mist_steam_friends_set_rich_presence(
     key: *const c_char,
     value: *const c_char,
 ) -> MistResult {
@@ -33,7 +33,10 @@ pub extern "C" fn mist_friends_set_rich_presence(
         )
     };
 
-    unwrap_client_result!(subprocess.client().friends().set_rich_presence(key, value));
+    unwrap_client_result!(subprocess
+        .client()
+        .steam_friends()
+        .set_rich_presence(key, value));
 
     Success
 }

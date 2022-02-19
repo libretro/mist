@@ -1,11 +1,11 @@
 use super::MistServerService;
 use crate::{
     result::{Error, SteamRemoteStorageError},
-    service::MistServiceRemoteStorage,
+    service::MistServiceSteamRemoteStorage,
 };
 
 // ISteamRemoteStorage
-impl MistServiceRemoteStorage for MistServerService {
+impl MistServiceSteamRemoteStorage for MistServerService {
     fn begin_file_write_batch(&mut self) -> Result<(), Error> {
         if unsafe {
             steamworks_sys::SteamAPI_ISteamRemoteStorage_BeginFileWriteBatch(
