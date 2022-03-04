@@ -82,7 +82,7 @@ pub extern "C" fn mist_steam_apps_is_dlc_installed(
     let subprocess = get_subprocess!();
     unsafe {
         *installed =
-            unwrap_client_result!(subprocess.client().steam_apps().is_app_installed(app_id))
+            unwrap_client_result!(subprocess.client().steam_apps().is_dlc_installed(app_id))
     };
     Success
 }
