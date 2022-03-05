@@ -246,10 +246,64 @@ MistResult mist_steam_remote_storage_begin_file_write_batch(void);
 MistResult mist_steam_remote_storage_end_file_write_batch(void);
 
 /**
- * Returns the appid of the running application
+ * Returns the appid of the running application in out ptr
  * Returns MistResult
  */
 MistResult mist_steam_utils_get_appid(AppId *app_id);
+
+/**
+ * Returns the battery percentage in out ptr
+ * Returns MistResult
+ */
+MistResult mist_steam_utils_get_current_battery_power(uint8_t *battery_power);
+
+/**
+ * Return if the Steam overlay is enabled in out ptr
+ * Returns MistResult
+ */
+MistResult mist_steam_utils_is_overlay_enabled(bool *overlay_enabled);
+
+/**
+ * Return if Steam is running in Big Picture mode in out ptr
+ * Returns MistResult
+ */
+MistResult mist_steam_utils_is_steam_in_big_picture_mode(bool *in_big_picture);
+
+/**
+ * Return if Steam is running in VR mode in out ptr
+ * Returns MistResult
+ */
+MistResult mist_steam_utils_is_steam_running_in_vr(bool *running_in_vr);
+
+/**
+ * Return if VR view streaming via Steam Remote Play is enabled in the out ptr
+ * Returns MistResult
+ */
+MistResult mist_steam_utils_is_vr_headset_streaming_enabled(bool *vr_streaming_enabled);
+
+/**
+ * Return if steam is running on a steam deck in the out ptr
+ * Returns MistResult
+ */
+MistResult mist_steam_utils_is_steam_running_on_steam_deck(bool *on_deck);
+
+/**
+ * Set if Steam Remote Play should be avaliable for HMD content
+ * Returns MistResult
+ */
+MistResult mist_steam_utils_set_vr_headset_streaming_enabled(bool enabled);
+
+/**
+ * Make Steam translate controller input into mouse/kb for UI that does not support controllers
+ * Returns MistResult
+ */
+MistResult mist_steam_utils_set_game_launcher_mode(bool launcher_mode);
+
+/**
+ * Open the VR dashboard
+ * Returns MistResult
+ */
+MistResult mist_steam_utils_start_vr_dashboard(void);
 
 #include "mist_callbacks.h"
 

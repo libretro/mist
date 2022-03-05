@@ -3,6 +3,8 @@ use std::time::Duration;
 
 use crate::{result::Error, service::*};
 
+pub type Server = MistServer<MistServerService, std::io::Stdin, std::io::Stdout>;
+
 pub fn run() -> Result<()> {
     // Setup the service context which is avaliable to all the service calls
     let service = MistServerService {
@@ -12,6 +14,7 @@ pub fn run() -> Result<()> {
         steam_remote_storage: unsafe { steamworks_sys::SteamAPI_SteamRemoteStorage_v016() },
         steam_user: unsafe { steamworks_sys::SteamAPI_GetHSteamUser() },
         steam_utils: unsafe { steamworks_sys::SteamAPI_SteamUtils_v010() },
+        entered_gamepad_text: None,
         should_exit: false,
     };
 
@@ -48,9 +51,11 @@ pub fn run() -> Result<()> {
                 &mut callback as *mut _,
             )
         } {
-            if let Some(callback) =
-                crate::callbacks::MistCallback::from_steam_callback(steam_user, &callback)
-            {
+            if let Some(callback) = crate::callbacks::MistCallback::from_steam_callback(
+                &mut server,
+                steam_user,
+                &callback,
+            ) {
                 if let Err(err) = server.write_data(&MistServiceToLibrary::Callback(callback)) {
                     eprintln!("[mist] Error writing callback message to library: {}", err);
                     std::process::exit(1);
@@ -71,6 +76,7 @@ pub struct MistServerService {
     steam_remote_storage: *mut steamworks_sys::ISteamRemoteStorage,
     steam_user: steamworks_sys::HSteamUser,
     steam_utils: *mut steamworks_sys::ISteamUtils,
+    pub entered_gamepad_text: Option<String>,
     should_exit: bool,
 }
 

@@ -74,5 +74,6 @@ fn main() {
         .write_to_file(out_path.join("bindings.rs"))
         .expect("Couldn't write bindings!");
 
+    #[cfg(feature = "link")]
     println!("cargo:rustc-link-search={}", out_path.to_string_lossy());
 }

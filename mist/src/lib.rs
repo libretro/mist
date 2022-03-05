@@ -113,3 +113,7 @@ pub extern "C" fn mist_subprocess_deinit() -> MistResult {
 
     Success
 }
+
+// Workaround for build process
+#[cfg(feature = "mist-bin")]
+mod subprocess;

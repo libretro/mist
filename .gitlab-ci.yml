@@ -12,7 +12,7 @@ image: $CI_SERVER_HOST:5050/libretro-steam/rust-build-image:latest
       ref: master
       artifacts: true
   script: &build_common_script
-    - STEAMWORKS_SDK="$(pwd)/steamworks" cargo build --release --target=$RUST_TARGET --bin mist --features=steamworks
+    - STEAMWORKS_SDK="$(pwd)/steamworks" cargo build --release --target=$RUST_TARGET --bin mist --features=mist-bin
     - cargo build --release --target=$RUST_TARGET --lib --package mist
 
 build-linux-x64:

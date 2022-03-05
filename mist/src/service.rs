@@ -47,7 +47,15 @@ mist_service!(
     // ISteamUtils
     SteamUtils {
         fn get_appid() -> AppId;
+        fn get_current_battery_power() -> u8;
+        fn is_overlay_enabled() -> bool;
+        fn is_steam_in_big_picture_mode() -> bool;
+        fn is_steam_running_in_vr() -> bool;
+        fn is_vr_headset_streaming_enabled() -> bool;
         fn is_steam_running_on_steam_deck() -> bool;
+        fn set_vr_headset_streaming_enabled(enabled: bool);
+        fn set_game_launcher_mode(launcher_mode: bool);
+        fn start_vr_dashboard();
     }
 
     // Internal

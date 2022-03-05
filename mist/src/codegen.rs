@@ -405,6 +405,7 @@ macro_rules! mist_callbacks {
     ($($module:ident {
         $($callback_ident:ident {
             $($callback_var_ident:ident => $callback_field_ident:ident: $callback_var_ty:ty),*
+            $(,[$( (|$callback_fn_server_param:ident, $callback_fn_param:ident| $callback_block:block) )*])* //=> $callback_fn_field_ident:ident: $callback_fn_var_ty:ty
         }),*
     }),*) => {
         paste::paste! {
@@ -416,6 +417,9 @@ macro_rules! mist_callbacks {
                     #[repr(C)]
                     pub struct [<MistCallback $callback_ident>] {
                         $($callback_field_ident: $callback_var_ty),*
+                        /*$(,
+                            $($callback_fn_field_ident: $callback_fn_var_ty),*
+                        )*/
                     }
                 )*
             )*
@@ -438,10 +442,10 @@ macro_rules! mist_callbacks {
                 ),*),*
             }
 
-            #[cfg(feature = "steamworks")]
             impl MistCallback {
                 #[allow(dead_code)] // It is actually used, no idea why rust-analyzer thinks otherwise
-                pub fn from_steam_callback(user: SteamUser, callback: &steamworks_sys::CallbackMsg_t) -> Option<MistCallback> {
+                #[cfg(any(feature = "mist-bin", feature = "codegen"))]
+                pub fn from_steam_callback(server: &mut $crate::subprocess::Server, user: SteamUser, callback: &steamworks_sys::CallbackMsg_t) -> Option<MistCallback> {
                     let callback_id = callback.m_iCallback as u32;
                     match callback_id {
                         $(
@@ -451,15 +455,23 @@ macro_rules! mist_callbacks {
                                     #[allow(unused_variables)] // This can be unused if the struct has no fields
                                     let data = unsafe { &*data_ptr };
 
+                                    $($(
+                                        (|$callback_fn_server_param: &mut $crate::subprocess::Server, $callback_fn_param: &steamworks_sys::[<$callback_ident _t>]|
+                                            $callback_block)(server, data);
+                                    )*)*
+
                                     Some(MistCallback {
                                         user,
                                         callback: callback_id,
                                         data: MistCallbacks::[<$module $callback_ident>] ([<MistCallback $callback_ident>] {
                                             $($callback_field_ident: data.$callback_var_ident),*
+                                            /*$(,
+                                                $($callback_fn_field_ident: (|$callback_fn_param| $callback_block)(data)),*
+                                            )*/
                                         })
                                     })
                                },
-                            ),*
+                            )*
                         )*
                         _ => None
                     }

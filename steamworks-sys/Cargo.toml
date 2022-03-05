@@ -5,3 +5,6 @@ edition = "2021"
 
 [build-dependencies]
 bindgen = "0.59"
+
+[features]
+link = []

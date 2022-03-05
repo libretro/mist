@@ -5,4 +5,4 @@ edition = "2021"
 
 [dependencies]
 cbindgen = "0.20"
-mist = { path = "../../mist", features = ["codegen"] }
+mist = { path = "../../mist", features = ["codegen", "mist-bin"] }
