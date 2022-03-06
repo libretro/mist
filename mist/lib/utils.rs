@@ -1,7 +1,17 @@
-use crate::{
-    result::{MistResult, Success},
-    types::AppId,
+use std::{
+    ffi::CStr,
+    os::raw::{c_char, c_int},
 };
+
+use crate::{
+    result::{Error, MistResult, SteamUtilsError, Success},
+    types::{
+        AppId, MistFloatingGamepadTextInputMode, MistGamepadTextInputLineMode,
+        MistGamepadTextInputMode,
+    },
+};
+
+pub static mut ENTERED_GAMEPAD_TEXT: *mut String = std::ptr::null_mut();
 
 /// Returns the appid of the running application in out ptr
 /// Returns MistResult
@@ -31,6 +41,80 @@ pub extern "C" fn mist_steam_utils_get_current_battery_power(battery_power: *mut
 
     unsafe {
         *battery_power = power;
+    }
+
+    Success
+}
+
+/// Copies the entered gamepad text to `text` buffer of `text_size`
+/// Returns MistResult
+#[no_mangle]
+pub extern "C" fn mist_steam_utils_get_entered_gamepad_text_input(
+    text: *mut c_char,
+    text_size: u32,
+) -> MistResult {
+    let subprocess = get_subprocess!();
+    let text_size = text_size as usize;
+
+    if unsafe { ENTERED_GAMEPAD_TEXT.is_null() } {
+        let entered = unwrap_client_result!(subprocess
+            .client()
+            .steam_utils()
+            .get_entered_gamepad_text_input());
+
+        if let Some(entered) = entered {
+            unsafe {
+                std::ptr::copy_nonoverlapping(
+                    entered.as_ptr() as *mut i8,
+                    text,
+                    entered.len().min(text_size),
+                );
+            }
+        } else {
+            return Error::SteamUtils(SteamUtilsError::NoGamepadTextEntered).into();
+        }
+    } else {
+        {
+            let entered = unsafe { &*ENTERED_GAMEPAD_TEXT };
+            unsafe {
+                std::ptr::copy_nonoverlapping(
+                    entered.as_ptr() as *mut i8,
+                    text,
+                    entered.len().min(text_size),
+                );
+            }
+        }
+
+        drop(unsafe { Box::from_raw(ENTERED_GAMEPAD_TEXT) });
+        unsafe { ENTERED_GAMEPAD_TEXT = std::ptr::null_mut() }
+    }
+
+    Success
+}
+
+/// Sets the length out ptr to the length of the entered gamepad text
+/// Returns MistResult
+#[no_mangle]
+pub extern "C" fn mist_steam_utils_get_entered_gamepad_text_length(length: *mut u32) -> MistResult {
+    let subprocess = get_subprocess!();
+
+    let entered = unwrap_client_result!(subprocess
+        .client()
+        .steam_utils()
+        .get_entered_gamepad_text_input());
+
+    if let Some(entered) = entered {
+        if !unsafe { ENTERED_GAMEPAD_TEXT.is_null() } {
+            drop(unsafe { Box::from_raw(ENTERED_GAMEPAD_TEXT) });
+            unsafe { ENTERED_GAMEPAD_TEXT = std::ptr::null_mut() }
+        }
+
+        unsafe {
+            *length = entered.len() as u32;
+            ENTERED_GAMEPAD_TEXT = Box::into_raw(Box::new(entered));
+        }
+    } else {
+        return Error::SteamUtils(SteamUtilsError::NoGamepadTextEntered).into();
     }
 
     Success
@@ -136,6 +220,75 @@ pub extern "C" fn mist_steam_utils_set_vr_headset_streaming_enabled(enabled: boo
         .client()
         .steam_utils()
         .set_vr_headset_streaming_enabled(enabled));
+
+    Success
+}
+
+/// Showing a floating keyboard over the game and sends input directly to it
+/// Returns if shown in out ptr
+/// Returns MistResult
+#[no_mangle]
+pub extern "C" fn mist_steam_utils_show_gamepad_text_input(
+    input_mode: MistGamepadTextInputMode,
+    line_input_mode: MistGamepadTextInputLineMode,
+    description: *const c_char,
+    char_max: u32,
+    existing_text: *const c_char,
+    shown: *mut bool,
+) -> MistResult {
+    let subprocess = get_subprocess!();
+
+    let description = unsafe { CStr::from_ptr(description) }
+        .to_string_lossy()
+        .to_string();
+    let existing_text = unsafe { CStr::from_ptr(existing_text) }
+        .to_string_lossy()
+        .to_string();
+
+    let did_show =
+        unwrap_client_result!(subprocess.client().steam_utils().show_gamepad_text_input(
+            input_mode,
+            line_input_mode,
+            description,
+            char_max,
+            existing_text
+        ));
+
+    unsafe {
+        *shown = did_show;
+    }
+
+    Success
+}
+
+/// Showing a floating keyboard over the game and sends input directly to it
+/// Returns if shown in out ptr
+/// Returns MistResult
+#[no_mangle]
+pub extern "C" fn mist_steam_utils_show_floating_gamepad_text_input(
+    keyboard_mode: MistFloatingGamepadTextInputMode,
+    text_field_x_position: c_int,
+    text_field_y_position: c_int,
+    text_field_width: c_int,
+    text_field_height: c_int,
+    shown: *mut bool,
+) -> MistResult {
+    let subprocess = get_subprocess!();
+
+    let did_show = unwrap_client_result!(subprocess
+        .client()
+        .steam_utils()
+        .show_floating_gamepad_text_input(
+            keyboard_mode,
+            text_field_x_position,
+            text_field_y_position,
+            text_field_width,
+            text_field_height
+        ));
+
+    unsafe {
+        *shown = did_show;
+    }
 
     Success
 }

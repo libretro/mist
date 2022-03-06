@@ -13,6 +13,23 @@
 #define MIST_IS_SUCCESS(result) (MIST_RESULT_CODE(result) == MistResult_Success)
 #define MIST_IS_ERROR(result) (!MIST_IS_SUCCESS(result))
 
+typedef enum MistFloatingGamepadTextInputMode {
+  MistFloatingGamepadTextInputMode_SingleLine = 0,
+  MistFloatingGamepadTextInputMode_MultipleLines = 1,
+  MistFloatingGamepadTextInputMode_Email = 2,
+  MistFloatingGamepadTextInputMode_Numeric = 3,
+} MistFloatingGamepadTextInputMode;
+
+typedef enum MistGamepadTextInputLineMode {
+  MistGamepadTextInputLineMode_SingleLine = 0,
+  MistGamepadTextInputLineMode_MultipleLines = 1,
+} MistGamepadTextInputLineMode;
+
+typedef enum MistGamepadTextInputMode {
+  MistGamepadTextInputMode_Normal = 0,
+  MistGamepadTextInputMode_Password = 1,
+} MistGamepadTextInputMode;
+
 typedef uint32_t MistResult;
 
 typedef int32_t SteamUser;
@@ -258,6 +275,18 @@ MistResult mist_steam_utils_get_appid(AppId *app_id);
 MistResult mist_steam_utils_get_current_battery_power(uint8_t *battery_power);
 
 /**
+ * Copies the entered gamepad text to `text` buffer of `text_size`
+ * Returns MistResult
+ */
+MistResult mist_steam_utils_get_entered_gamepad_text_input(char *text, uint32_t text_size);
+
+/**
+ * Sets the length out ptr to the length of the entered gamepad text
+ * Returns MistResult
+ */
+MistResult mist_steam_utils_get_entered_gamepad_text_length(uint32_t *length);
+
+/**
  * Return if the Steam overlay is enabled in out ptr
  * Returns MistResult
  */
@@ -292,6 +321,30 @@ MistResult mist_steam_utils_is_steam_running_on_steam_deck(bool *on_deck);
  * Returns MistResult
  */
 MistResult mist_steam_utils_set_vr_headset_streaming_enabled(bool enabled);
+
+/**
+ * Showing a floating keyboard over the game and sends input directly to it
+ * Returns if shown in out ptr
+ * Returns MistResult
+ */
+MistResult mist_steam_utils_show_gamepad_text_input(enum MistGamepadTextInputMode input_mode,
+                                                    enum MistGamepadTextInputLineMode line_input_mode,
+                                                    const char *description,
+                                                    uint32_t char_max,
+                                                    const char *existing_text,
+                                                    bool *shown);
+
+/**
+ * Showing a floating keyboard over the game and sends input directly to it
+ * Returns if shown in out ptr
+ * Returns MistResult
+ */
+MistResult mist_steam_utils_show_floating_gamepad_text_input(enum MistFloatingGamepadTextInputMode keyboard_mode,
+                                                             int text_field_x_position,
+                                                             int text_field_y_position,
+                                                             int text_field_width,
+                                                             int text_field_height,
+                                                             bool *shown);
 
 /**
  * Make Steam translate controller input into mouse/kb for UI that does not support controllers

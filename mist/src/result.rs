@@ -30,5 +30,8 @@ mist_errors! {
     SteamRemoteStorage: 123 {
         FileWriteBatchAlreadyInProgress = 0,
         FileWriteBatchNotInProgress
+    },
+    SteamUtils: 128 {
+        NoGamepadTextEntered = 0
     }
 }

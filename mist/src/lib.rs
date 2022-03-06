@@ -111,6 +111,12 @@ mod utils;
 pub extern "C" fn mist_subprocess_deinit() -> MistResult {
     unwrap_client_result!(lib_subprocess::mist_deinit_subprocess());
 
+    // Cleanup the entered gamepad static if present
+    if !unsafe { utils::ENTERED_GAMEPAD_TEXT.is_null() } {
+        drop(unsafe { Box::from_raw(utils::ENTERED_GAMEPAD_TEXT) });
+        unsafe { utils::ENTERED_GAMEPAD_TEXT = std::ptr::null_mut() }
+    }
+
     Success
 }
 

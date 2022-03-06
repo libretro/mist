@@ -1,3 +1,5 @@
+use std::os::raw::c_int;
+
 use crate::types::*;
 
 // Service calls for the subprocess
@@ -48,12 +50,27 @@ mist_service!(
     SteamUtils {
         fn get_appid() -> AppId;
         fn get_current_battery_power() -> u8;
+        fn get_entered_gamepad_text_input() -> Option<String>;
         fn is_overlay_enabled() -> bool;
         fn is_steam_in_big_picture_mode() -> bool;
         fn is_steam_running_in_vr() -> bool;
         fn is_vr_headset_streaming_enabled() -> bool;
         fn is_steam_running_on_steam_deck() -> bool;
         fn set_vr_headset_streaming_enabled(enabled: bool);
+        fn show_gamepad_text_input(
+            input_mode: MistGamepadTextInputMode,
+            line_input_mode: MistGamepadTextInputLineMode,
+            description: String,
+            char_max: u32,
+            existing_text: String
+        ) -> bool;
+        fn show_floating_gamepad_text_input(
+            keyboard_mode: MistFloatingGamepadTextInputMode,
+            text_field_x_position: c_int,
+            text_field_y_position: c_int,
+            text_field_width: c_int,
+            text_field_height: c_int
+        ) -> bool;
         fn set_game_launcher_mode(launcher_mode: bool);
         fn start_vr_dashboard();
     }

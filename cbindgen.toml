@@ -20,3 +20,6 @@ trailer = """
 """
 
 includes = ["mist_results.h"]
+
+[enum]
+prefix_with_name = true

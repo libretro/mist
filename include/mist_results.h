@@ -3,7 +3,8 @@ enum {
 	MistResult_Mist = 1,
 	MistResult_SteamApps = 100,
 	MistResult_SteamFriends = 105,
-	MistResult_SteamRemoteStorage = 123
+	MistResult_SteamRemoteStorage = 123,
+	MistResult_SteamUtils = 128
 };
 
 enum {
@@ -30,4 +31,8 @@ enum {
 enum {
 	SteamRemoteStorageError_FileWriteBatchAlreadyInProgress = 0,
 	SteamRemoteStorageError_FileWriteBatchNotInProgress
+};
+
+enum {
+	SteamUtilsError_NoGamepadTextEntered = 0
 };
