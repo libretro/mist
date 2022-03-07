@@ -1,3 +1,5 @@
+#![windows_subsystem = "windows"]
+
 #[macro_use]
 mod codegen;
 mod callbacks;
