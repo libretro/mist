@@ -61,14 +61,14 @@ macro_rules! mist_service {
             pub struct MistClient<R: Read, W: Write> {
                 callbacks: std::collections::VecDeque<crate::callbacks::MistCallback>,
                 write: W,
-                pub receiver: std::sync::mpsc::Receiver<MistServiceToLibrary>,
+                pub receiver: crossbeam_channel::Receiver<MistServiceToLibrary>,
                 _read: std::marker::PhantomData<R>,
             }
 
             #[allow(dead_code)]
             impl<R: Read + Send + 'static, W: Write> MistClient<R, W> {
                 pub fn create(mut read: R, write: W) -> MistClient<R, W> {
-                    let (sender, receiver) = std::sync::mpsc::channel::<MistServiceToLibrary>();
+                    let (sender, receiver) = crossbeam_channel::unbounded::<MistServiceToLibrary>();
                     // Spawn a stdin listen thread
                     std::thread::spawn(move || {
                         loop {
@@ -186,7 +186,7 @@ macro_rules! mist_service {
             {
                 service: S,
                 write: W,
-                receiver: std::sync::mpsc::Receiver<MistLibraryToService>,
+                receiver: crossbeam_channel::Receiver<MistLibraryToService>,
                 _read: std::marker::PhantomData<R>,
             }
 
@@ -195,7 +195,7 @@ macro_rules! mist_service {
             impl<S: MistService, R: Read + Send + 'static, W: Write> MistServer<S, R, W> {
                 pub fn create(service: S, mut read: R, write: W) -> MistServer<S, R, W> {
                     // stdin reading is blocking, therefore we have a dedicated thread for it. It will always idle while waiting
-                    let (sender, receiver) = std::sync::mpsc::channel::<MistLibraryToService>();
+                    let (sender, receiver) = crossbeam_channel::unbounded::<MistLibraryToService>();
                     std::thread::spawn(move || {
                         loop {
                             let mut len_buf = [0u8; 32 / 8];
@@ -274,8 +274,8 @@ macro_rules! mist_service {
                                 // Keep timeout zero for subsequent polls so we stop when there is no more calls
                                 timeout = Duration::default();
                             },
-                            Err(std::sync::mpsc::RecvTimeoutError::Timeout) => break,
-                            Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => {
+                            Err(crossbeam_channel::RecvTimeoutError::Timeout) => break,
+                            Err(crossbeam_channel::RecvTimeoutError::Disconnected) => {
                                 eprintln!("[mist] Disconnected from stdin channel in subprocess");
                                 std::process::exit(1);
                             },
