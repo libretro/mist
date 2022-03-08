@@ -69,12 +69,14 @@ pub extern "C" fn mist_next_callback(
     // Get the callback queue
     let queue = subprocess.client().callbacks();
 
-    // Remove the previous callback
-    if unsafe { HAS_PROCESSED_CALLBACK } {
-        queue.pop_front();
-    } else {
-        unsafe {
-            HAS_PROCESSED_CALLBACK = true;
+    if !queue.is_empty() {
+        // Remove the previous callback
+        if unsafe { HAS_PROCESSED_CALLBACK } {
+            queue.pop_front();
+        } else {
+            unsafe {
+                HAS_PROCESSED_CALLBACK = true;
+            }
         }
     }
 
