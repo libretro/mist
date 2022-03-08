@@ -217,7 +217,8 @@ macro_rules! mist_service {
                                         }
                                     }
                                 },
-                                Err(err) => if err.kind() != std::io::ErrorKind::UnexpectedEof {
+                                // This should never fail as long as we have a working parent process
+                                Err(err) => {
                                     eprintln!("[mist] Error reading stdin in subprocess: {}", err);
                                     std::process::exit(1);
                                 },
