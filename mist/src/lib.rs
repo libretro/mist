@@ -69,15 +69,8 @@ pub extern "C" fn mist_next_callback(
     // Get the callback queue
     let queue = subprocess.client().callbacks();
 
-    if !queue.is_empty() {
-        // Remove the previous callback
-        if unsafe { HAS_PROCESSED_CALLBACK } {
-            queue.pop_front();
-        } else {
-            unsafe {
-                HAS_PROCESSED_CALLBACK = true;
-            }
-        }
+    if unsafe { HAS_PROCESSED_CALLBACK } {
+        queue.pop_front();
     }
 
     // Null the callback ptr ptr if the queue is empty
@@ -89,10 +82,12 @@ pub extern "C" fn mist_next_callback(
                 data: &front.data as *const _ as *const std::ffi::c_void,
             };
             *has_callback = true;
+            HAS_PROCESSED_CALLBACK = true;
         }
     } else {
         unsafe {
             *has_callback = false;
+            HAS_PROCESSED_CALLBACK = false;
         }
     }
 
