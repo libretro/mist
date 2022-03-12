@@ -47,7 +47,7 @@ pub extern "C" fn mist_subprocess_init() -> MistResult {
 /// Returns MistResult
 #[no_mangle]
 pub extern "C" fn mist_poll() -> MistResult {
-    let subprocess = get_subprocess!();
+    let mut subprocess = get_subprocess!();
 
     unwrap_client_result!(subprocess.client().poll());
 
@@ -64,7 +64,7 @@ pub extern "C" fn mist_next_callback(
 ) -> MistResult {
     static mut HAS_PROCESSED_CALLBACK: bool = false;
 
-    let subprocess = get_subprocess!();
+    let mut subprocess = get_subprocess!();
 
     // Get the callback queue
     let queue = subprocess.client().callbacks();

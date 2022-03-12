@@ -24,7 +24,7 @@ pub extern "C" fn mist_steam_apps_get_dlc_data_by_index(
     dlc: i32,
     dlc_data: *mut MistDlcData,
 ) -> MistResult {
-    let subprocess = get_subprocess!();
+    let mut subprocess = get_subprocess!();
     let dlc = unwrap_client_result!(subprocess.client().steam_apps().get_dlc_data_by_index(dlc));
 
     static mut DLC_DATA_NAME: Option<CString> = None;
@@ -51,7 +51,7 @@ pub extern "C" fn mist_steam_apps_is_app_installed(
     app_id: AppId,
     installed: *mut bool,
 ) -> MistResult {
-    let subprocess = get_subprocess!();
+    let mut subprocess = get_subprocess!();
     unsafe {
         *installed =
             unwrap_client_result!(subprocess.client().steam_apps().is_app_installed(app_id))
@@ -64,7 +64,7 @@ pub extern "C" fn mist_steam_apps_is_app_installed(
 /// Returns MistResult
 #[no_mangle]
 pub extern "C" fn mist_steam_apps_is_cybercafe(is_cybercafe: *mut bool) -> MistResult {
-    let subprocess = get_subprocess!();
+    let mut subprocess = get_subprocess!();
     unsafe {
         *is_cybercafe = unwrap_client_result!(subprocess.client().steam_apps().is_cybercafe())
     };
@@ -79,7 +79,7 @@ pub extern "C" fn mist_steam_apps_is_dlc_installed(
     app_id: AppId,
     installed: *mut bool,
 ) -> MistResult {
-    let subprocess = get_subprocess!();
+    let mut subprocess = get_subprocess!();
     unsafe {
         *installed =
             unwrap_client_result!(subprocess.client().steam_apps().is_dlc_installed(app_id))
@@ -91,7 +91,7 @@ pub extern "C" fn mist_steam_apps_is_dlc_installed(
 /// Returns MistResult
 #[no_mangle]
 pub extern "C" fn mist_steam_apps_is_low_violence(is_low_violence: *mut bool) -> MistResult {
-    let subprocess = get_subprocess!();
+    let mut subprocess = get_subprocess!();
     unsafe {
         *is_low_violence = unwrap_client_result!(subprocess.client().steam_apps().is_low_violence())
     };
@@ -102,7 +102,7 @@ pub extern "C" fn mist_steam_apps_is_low_violence(is_low_violence: *mut bool) ->
 /// Returns MistResult
 #[no_mangle]
 pub extern "C" fn mist_steam_apps_is_subscribed(is_subscribed: *mut bool) -> MistResult {
-    let subprocess = get_subprocess!();
+    let mut subprocess = get_subprocess!();
     unsafe {
         *is_subscribed = unwrap_client_result!(subprocess.client().steam_apps().is_subscribed())
     };
@@ -116,7 +116,7 @@ pub extern "C" fn mist_steam_apps_is_subscribed_app(
     app_id: AppId,
     is_subscribed: *mut bool,
 ) -> MistResult {
-    let subprocess = get_subprocess!();
+    let mut subprocess = get_subprocess!();
     unsafe {
         *is_subscribed =
             unwrap_client_result!(subprocess.client().steam_apps().is_subscribed_app(app_id))
@@ -130,7 +130,7 @@ pub extern "C" fn mist_steam_apps_is_subscribed_app(
 pub extern "C" fn mist_steam_apps_is_subscribed_from_family_sharing(
     is_subscribed_from_family_sharing: *mut bool,
 ) -> MistResult {
-    let subprocess = get_subprocess!();
+    let mut subprocess = get_subprocess!();
     unsafe {
         *is_subscribed_from_family_sharing = unwrap_client_result!(subprocess
             .client()
@@ -146,7 +146,7 @@ pub extern "C" fn mist_steam_apps_is_subscribed_from_family_sharing(
 pub extern "C" fn mist_steam_apps_is_subscribed_from_free_weekend(
     is_subscribed_from_free_weekend: *mut bool,
 ) -> MistResult {
-    let subprocess = get_subprocess!();
+    let mut subprocess = get_subprocess!();
     unsafe {
         *is_subscribed_from_free_weekend = unwrap_client_result!(subprocess
             .client()
@@ -160,7 +160,7 @@ pub extern "C" fn mist_steam_apps_is_subscribed_from_free_weekend(
 /// Returns MistResult
 #[no_mangle]
 pub extern "C" fn mist_steam_apps_is_vac_banned(is_vac_banned: *mut bool) -> MistResult {
-    let subprocess = get_subprocess!();
+    let mut subprocess = get_subprocess!();
     unsafe {
         *is_vac_banned = unwrap_client_result!(subprocess.client().steam_apps().is_vac_banned())
     };
@@ -171,7 +171,7 @@ pub extern "C" fn mist_steam_apps_is_vac_banned(is_vac_banned: *mut bool) -> Mis
 /// Returns MistResult
 #[no_mangle]
 pub extern "C" fn mist_steam_apps_get_app_build_id(build_id: *mut BuildId) -> MistResult {
-    let subprocess = get_subprocess!();
+    let mut subprocess = get_subprocess!();
     unsafe {
         *build_id = unwrap_client_result!(subprocess.client().steam_apps().get_app_build_id())
     };
@@ -186,7 +186,7 @@ pub extern "C" fn mist_steam_apps_get_app_install_dir(
     app_id: AppId,
     app_install_dir: *mut *const c_char,
 ) -> MistResult {
-    let subprocess = get_subprocess!();
+    let mut subprocess = get_subprocess!();
     let install_dir =
         unwrap_client_result!(subprocess.client().steam_apps().get_app_install_dir(app_id));
 
@@ -215,7 +215,7 @@ pub extern "C" fn mist_steam_apps_get_app_install_dir(
 /// Returns MistResult
 #[no_mangle]
 pub extern "C" fn mist_steam_apps_get_app_owner(steam_id: *mut SteamId) -> MistResult {
-    let subprocess = get_subprocess!();
+    let mut subprocess = get_subprocess!();
     unsafe { *steam_id = unwrap_client_result!(subprocess.client().steam_apps().get_app_owner()) };
     Success
 }
@@ -226,7 +226,7 @@ pub extern "C" fn mist_steam_apps_get_app_owner(steam_id: *mut SteamId) -> MistR
 pub extern "C" fn mist_steam_apps_get_available_game_languages(
     avaliable_languages: *mut *const c_char,
 ) -> MistResult {
-    let subprocess = get_subprocess!();
+    let mut subprocess = get_subprocess!();
     let game_languages = unwrap_client_result!(subprocess
         .client()
         .steam_apps()
@@ -249,7 +249,7 @@ pub extern "C" fn mist_steam_apps_get_available_game_languages(
 pub extern "C" fn mist_steam_apps_get_current_beta_name(
     current_beta_name: *mut *const c_char,
 ) -> MistResult {
-    let subprocess = get_subprocess!();
+    let mut subprocess = get_subprocess!();
     let beta = unwrap_client_result!(subprocess.client().steam_apps().get_current_beta_name());
 
     static mut BETA_NAME: Option<CString> = None;
@@ -274,7 +274,7 @@ pub extern "C" fn mist_steam_apps_get_current_beta_name(
 pub extern "C" fn mist_steam_apps_get_current_game_language(
     current_game_language: *mut *const c_char,
 ) -> MistResult {
-    let subprocess = get_subprocess!();
+    let mut subprocess = get_subprocess!();
     let current_language =
         unwrap_client_result!(subprocess.client().steam_apps().get_current_game_language());
 
@@ -292,7 +292,7 @@ pub extern "C" fn mist_steam_apps_get_current_game_language(
 /// Returns MistResult
 #[no_mangle]
 pub extern "C" fn mist_steam_apps_get_dlc_count(dlc_count: *mut i32) -> MistResult {
-    let subprocess = get_subprocess!();
+    let mut subprocess = get_subprocess!();
     unsafe { *dlc_count = unwrap_client_result!(subprocess.client().steam_apps().get_dlc_count()) };
     Success
 }
@@ -306,7 +306,7 @@ pub extern "C" fn mist_steam_apps_get_dlc_download_progress(
     bytes_downloaded: *mut u64,
     bytes_total: *mut u64,
 ) -> MistResult {
-    let subprocess = get_subprocess!();
+    let mut subprocess = get_subprocess!();
     let download_progress = unwrap_client_result!(subprocess
         .client()
         .steam_apps()
@@ -334,7 +334,7 @@ pub extern "C" fn mist_steam_apps_get_earliest_purchase_unix_time(
     app_id: AppId,
     purchase_time: *mut u32,
 ) -> MistResult {
-    let subprocess = get_subprocess!();
+    let mut subprocess = get_subprocess!();
     unsafe {
         *purchase_time = unwrap_client_result!(subprocess
             .client()
@@ -356,7 +356,7 @@ pub extern "C" fn mist_steam_apps_get_installed_depots(
     depots_size: u32,
     installed_depots: *mut u32,
 ) -> MistResult {
-    let subprocess = get_subprocess!();
+    let mut subprocess = get_subprocess!();
     let depot_ids = unwrap_client_result!(subprocess
         .client()
         .steam_apps()
@@ -375,7 +375,7 @@ pub extern "C" fn mist_steam_apps_get_installed_depots(
 pub extern "C" fn mist_steam_apps_get_launch_command_line(
     launch_command_line: *mut *const c_char,
 ) -> MistResult {
-    let subprocess = get_subprocess!();
+    let mut subprocess = get_subprocess!();
     let launch_command =
         unwrap_client_result!(subprocess.client().steam_apps().get_current_game_language());
 
@@ -397,7 +397,7 @@ pub extern "C" fn mist_steam_apps_get_launch_query_param(
     key: *const c_char,
     value: *mut *const c_char,
 ) -> MistResult {
-    let subprocess = get_subprocess!();
+    let mut subprocess = get_subprocess!();
     let key = unsafe { CStr::from_ptr(key) }.to_string_lossy().to_string();
     let param_value =
         unwrap_client_result!(subprocess.client().steam_apps().get_launch_query_param(key));
@@ -422,7 +422,7 @@ pub extern "C" fn mist_steam_apps_get_launch_query_param(
 /// Returns MistResult
 #[no_mangle]
 pub extern "C" fn mist_steam_apps_install_dlc(app_id: AppId) -> MistResult {
-    let subprocess = get_subprocess!();
+    let mut subprocess = get_subprocess!();
     unwrap_client_result!(subprocess.client().steam_apps().install_dlc(app_id));
     Success
 }
@@ -432,7 +432,7 @@ pub extern "C" fn mist_steam_apps_install_dlc(app_id: AppId) -> MistResult {
 /// Returns MistResult
 #[no_mangle]
 pub extern "C" fn mist_steam_apps_mark_content_corrupt(missing_files_only: bool) -> MistResult {
-    let subprocess = get_subprocess!();
+    let mut subprocess = get_subprocess!();
     unwrap_client_result!(subprocess
         .client()
         .steam_apps()
@@ -444,7 +444,7 @@ pub extern "C" fn mist_steam_apps_mark_content_corrupt(missing_files_only: bool)
 /// Returns MistResult
 #[no_mangle]
 pub extern "C" fn mist_steam_apps_uninstall_dlc(app_id: AppId) -> MistResult {
-    let subprocess = get_subprocess!();
+    let mut subprocess = get_subprocess!();
     unwrap_client_result!(subprocess.client().steam_apps().uninstall_dlc(app_id));
     Success
 }

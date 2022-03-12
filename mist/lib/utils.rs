@@ -17,7 +17,7 @@ pub static mut ENTERED_GAMEPAD_TEXT: *mut String = std::ptr::null_mut();
 /// Returns MistResult
 #[no_mangle]
 pub extern "C" fn mist_steam_utils_get_appid(app_id: *mut AppId) -> MistResult {
-    let subprocess = get_subprocess!();
+    let mut subprocess = get_subprocess!();
 
     let id = unwrap_client_result!(subprocess.client().steam_utils().get_appid());
 
@@ -32,7 +32,7 @@ pub extern "C" fn mist_steam_utils_get_appid(app_id: *mut AppId) -> MistResult {
 /// Returns MistResult
 #[no_mangle]
 pub extern "C" fn mist_steam_utils_get_current_battery_power(battery_power: *mut u8) -> MistResult {
-    let subprocess = get_subprocess!();
+    let mut subprocess = get_subprocess!();
 
     let power = unwrap_client_result!(subprocess
         .client()
@@ -53,7 +53,7 @@ pub extern "C" fn mist_steam_utils_get_entered_gamepad_text_input(
     text: *mut c_char,
     text_size: u32,
 ) -> MistResult {
-    let subprocess = get_subprocess!();
+    let mut subprocess = get_subprocess!();
     let text_size = text_size as usize;
 
     if unsafe { ENTERED_GAMEPAD_TEXT.is_null() } {
@@ -96,7 +96,7 @@ pub extern "C" fn mist_steam_utils_get_entered_gamepad_text_input(
 /// Returns MistResult
 #[no_mangle]
 pub extern "C" fn mist_steam_utils_get_entered_gamepad_text_length(length: *mut u32) -> MistResult {
-    let subprocess = get_subprocess!();
+    let mut subprocess = get_subprocess!();
 
     let entered = unwrap_client_result!(subprocess
         .client()
@@ -124,7 +124,7 @@ pub extern "C" fn mist_steam_utils_get_entered_gamepad_text_length(length: *mut 
 /// Returns MistResult
 #[no_mangle]
 pub extern "C" fn mist_steam_utils_is_overlay_enabled(overlay_enabled: *mut bool) -> MistResult {
-    let subprocess = get_subprocess!();
+    let mut subprocess = get_subprocess!();
 
     let enabled = unwrap_client_result!(subprocess.client().steam_utils().is_overlay_enabled());
 
@@ -141,7 +141,7 @@ pub extern "C" fn mist_steam_utils_is_overlay_enabled(overlay_enabled: *mut bool
 pub extern "C" fn mist_steam_utils_is_steam_in_big_picture_mode(
     in_big_picture: *mut bool,
 ) -> MistResult {
-    let subprocess = get_subprocess!();
+    let mut subprocess = get_subprocess!();
 
     let big_picture = unwrap_client_result!(subprocess
         .client()
@@ -159,7 +159,7 @@ pub extern "C" fn mist_steam_utils_is_steam_in_big_picture_mode(
 /// Returns MistResult
 #[no_mangle]
 pub extern "C" fn mist_steam_utils_is_steam_running_in_vr(running_in_vr: *mut bool) -> MistResult {
-    let subprocess = get_subprocess!();
+    let mut subprocess = get_subprocess!();
 
     let in_vr = unwrap_client_result!(subprocess.client().steam_utils().is_steam_running_in_vr());
 
@@ -176,7 +176,7 @@ pub extern "C" fn mist_steam_utils_is_steam_running_in_vr(running_in_vr: *mut bo
 pub extern "C" fn mist_steam_utils_is_vr_headset_streaming_enabled(
     vr_streaming_enabled: *mut bool,
 ) -> MistResult {
-    let subprocess = get_subprocess!();
+    let mut subprocess = get_subprocess!();
 
     let enabled = unwrap_client_result!(subprocess
         .client()
@@ -196,7 +196,7 @@ pub extern "C" fn mist_steam_utils_is_vr_headset_streaming_enabled(
 pub extern "C" fn mist_steam_utils_is_steam_running_on_steam_deck(
     on_deck: *mut bool,
 ) -> MistResult {
-    let subprocess = get_subprocess!();
+    let mut subprocess = get_subprocess!();
 
     let result = unwrap_client_result!(subprocess
         .client()
@@ -214,7 +214,7 @@ pub extern "C" fn mist_steam_utils_is_steam_running_on_steam_deck(
 /// Returns MistResult
 #[no_mangle]
 pub extern "C" fn mist_steam_utils_set_vr_headset_streaming_enabled(enabled: bool) -> MistResult {
-    let subprocess = get_subprocess!();
+    let mut subprocess = get_subprocess!();
 
     unwrap_client_result!(subprocess
         .client()
@@ -236,7 +236,7 @@ pub extern "C" fn mist_steam_utils_show_gamepad_text_input(
     existing_text: *const c_char,
     shown: *mut bool,
 ) -> MistResult {
-    let subprocess = get_subprocess!();
+    let mut subprocess = get_subprocess!();
 
     let description = unsafe { CStr::from_ptr(description) }
         .to_string_lossy()
@@ -273,7 +273,7 @@ pub extern "C" fn mist_steam_utils_show_floating_gamepad_text_input(
     text_field_height: c_int,
     shown: *mut bool,
 ) -> MistResult {
-    let subprocess = get_subprocess!();
+    let mut subprocess = get_subprocess!();
 
     let did_show = unwrap_client_result!(subprocess
         .client()
@@ -297,7 +297,7 @@ pub extern "C" fn mist_steam_utils_show_floating_gamepad_text_input(
 /// Returns MistResult
 #[no_mangle]
 pub extern "C" fn mist_steam_utils_set_game_launcher_mode(launcher_mode: bool) -> MistResult {
-    let subprocess = get_subprocess!();
+    let mut subprocess = get_subprocess!();
 
     unwrap_client_result!(subprocess
         .client()
@@ -311,7 +311,7 @@ pub extern "C" fn mist_steam_utils_set_game_launcher_mode(launcher_mode: bool) -
 /// Returns MistResult
 #[no_mangle]
 pub extern "C" fn mist_steam_utils_start_vr_dashboard() -> MistResult {
-    let subprocess = get_subprocess!();
+    let mut subprocess = get_subprocess!();
 
     unwrap_client_result!(subprocess.client().steam_utils().start_vr_dashboard());
 

@@ -1,3 +1,4 @@
+use parking_lot::Mutex;
 use std::process::{Child, ChildStdin, ChildStdout, Command, Stdio};
 
 use crate::{
@@ -5,29 +6,46 @@ use crate::{
     service::{MistClient, MistServiceToLibrary},
 };
 
-static mut SUBPROCESS: Option<MistSubprocess> = None;
+lazy_static::lazy_static! {
+    pub static ref SUBPROCESS: Mutex<Option<MistSubprocess>> = Mutex::new(None);
+}
 
 macro_rules! get_subprocess {
-    () => {
-        match crate::lib_subprocess::mist_get_subprocess() {
-            Some(s) => {
-                if s.is_alive() {
-                    s
-                } else {
-                    crate::mist_log_error("The subprocess has died");
-                    return crate::result::Error::Mist(crate::result::MistError::SubprocessLost)
-                        .into();
-                }
+    () => {{
+        let mut lock = $crate::lib_subprocess::SUBPROCESS.lock();
+
+        if let Some(inner) = lock.as_mut() {
+            if inner.is_alive() {
+                parking_lot::MutexGuard::map(lock, |inner| inner.as_mut().unwrap())
+            } else {
+                crate::mist_log_error("The subprocess has died");
+                return crate::result::Error::Mist(crate::result::MistError::SubprocessLost).into();
             }
-            None => {
-                crate::mist_log_error("Subprocess has not been initialized");
-                return crate::result::Error::Mist(
-                    crate::result::MistError::SubprocessNotInitialized,
-                )
+        } else {
+            crate::mist_log_error("Subprocess has not been initialized");
+            return crate::result::Error::Mist(crate::result::MistError::SubprocessNotInitialized)
                 .into();
+        }
+    }
+
+    /*match $crate::lib_subprocess::SUBPROCESS.lock() {
+        Some(s) => {
+            if s.is_alive() {
+                s
+            } else {
+                crate::mist_log_error("The subprocess has died");
+                return crate::result::Error::Mist(crate::result::MistError::SubprocessLost)
+                    .into();
             }
         }
-    };
+        None => {
+            crate::mist_log_error("Subprocess has not been initialized");
+            return crate::result::Error::Mist(
+                crate::result::MistError::SubprocessNotInitialized,
+            )
+            .into();
+        }
+    }*/};
 }
 
 pub struct MistSubprocess {
@@ -49,9 +67,11 @@ impl MistSubprocess {
 }
 
 pub fn mist_init_subprocess() -> Result<(), Error> {
-    if unsafe { SUBPROCESS.is_some() } {
-        crate::mist_log_error("The subprocess has already been initialized");
-        return Err(Error::Mist(MistError::SubprocessAlreadyInitialized));
+    {
+        if SUBPROCESS.lock().is_some() {
+            crate::mist_log_error("The subprocess has already been initialized");
+            return Err(Error::Mist(MistError::SubprocessAlreadyInitialized));
+        }
     }
 
     let exe = if cfg!(unix) {
@@ -99,7 +119,7 @@ pub fn mist_init_subprocess() -> Result<(), Error> {
     let subprocess = MistSubprocess { client, proc };
 
     // Set the subprocess
-    unsafe { SUBPROCESS = Some(subprocess) };
+    *SUBPROCESS.lock() = Some(subprocess);
 
     // Now let's wait for the init
     let subprocess = get_subprocess!();
@@ -128,7 +148,7 @@ pub fn mist_init_subprocess() -> Result<(), Error> {
 }
 
 pub fn mist_deinit_subprocess() -> Result<(), Error> {
-    let subprocess = match unsafe { &mut SUBPROCESS } {
+    let mut subprocess = match SUBPROCESS.lock().take() {
         Some(s) => s,
         None => {
             crate::mist_log_error(
@@ -167,11 +187,5 @@ pub fn mist_deinit_subprocess() -> Result<(), Error> {
         }
     }
 
-    unsafe { SUBPROCESS = None };
-
     Ok(())
-}
-
-pub fn mist_get_subprocess<'a>() -> Option<&'a mut MistSubprocess> {
-    unsafe { SUBPROCESS.as_mut() }
 }

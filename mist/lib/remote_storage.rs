@@ -5,7 +5,7 @@ use crate::result::{MistResult, Success};
 /// Returns MistResult
 #[no_mangle]
 pub extern "C" fn mist_steam_remote_storage_begin_file_write_batch() -> MistResult {
-    let subprocess = get_subprocess!();
+    let mut subprocess = get_subprocess!();
 
     unwrap_client_result!(subprocess
         .client()
@@ -20,7 +20,7 @@ pub extern "C" fn mist_steam_remote_storage_begin_file_write_batch() -> MistResu
 /// Returns MistResult
 #[no_mangle]
 pub extern "C" fn mist_steam_remote_storage_end_file_write_batch() -> MistResult {
-    let subprocess = get_subprocess!();
+    let mut subprocess = get_subprocess!();
 
     unwrap_client_result!(subprocess
         .client()
