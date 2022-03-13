@@ -42,12 +42,6 @@ typedef struct MistCallbackMsg {
 
 typedef uint32_t AppId;
 
-typedef struct MistDlcData {
-  AppId app_id;
-  bool avaliable;
-  const char *name;
-} MistDlcData;
-
 typedef int32_t BuildId;
 
 typedef uint64_t SteamId;
@@ -69,9 +63,11 @@ MistResult mist_poll(void);
 /**
  * Attempts to return the next callback, if none are left it will set p_callback to NULL
  * Safety: The pointer is only valid until the next call of this function
+ * Due to this it is not safe to simultaneously access callbacks from two different threads since they might race invalidate the other threads callback
  * Returns MistResult
  */
-MistResult mist_next_callback(bool *has_callback, struct MistCallbackMsg *p_callback);
+MistResult mist_next_callback(bool *has_callback,
+                              struct MistCallbackMsg *p_callback);
 
 /**
  * Deinits the mist subprocess, returns false on error
@@ -83,7 +79,11 @@ MistResult mist_subprocess_deinit(void);
  * Returns MistResult
  * dlc_data is only guaranteed to be valid til the next time the function is called
  */
-MistResult mist_steam_apps_get_dlc_data_by_index(int32_t dlc, struct MistDlcData *dlc_data);
+MistResult mist_steam_apps_get_dlc_data_by_index(int32_t dlc,
+                                                 AppId *app_id,
+                                                 bool *availiable,
+                                                 char *name,
+                                                 uint32_t name_size);
 
 /**
  * Checks if an app with the appid is installed
@@ -150,7 +150,10 @@ MistResult mist_steam_apps_get_app_build_id(BuildId *build_id);
  * Returns MistResult
  * app_install_dir is only guaranteed to be valid til the next time the function is called
  */
-MistResult mist_steam_apps_get_app_install_dir(AppId app_id, const char **app_install_dir);
+MistResult mist_steam_apps_get_app_install_dir(AppId app_id,
+                                               char *folder,
+                                               uint32_t folder_size,
+                                               uint32_t *folder_copied);
 
 /**
  * Get the steam id of the owner of the application
@@ -169,7 +172,7 @@ MistResult mist_steam_apps_get_available_game_languages(const char **avaliable_l
  * current_beta_name is only guaranteed to be valid til the next time the function is called
  * Returns MistResult
  */
-MistResult mist_steam_apps_get_current_beta_name(const char **current_beta_name);
+MistResult mist_steam_apps_get_current_beta_name(bool *on_beta, char *name, uint32_t name_size);
 
 /**
  * Get the current game language
@@ -207,7 +210,7 @@ MistResult mist_steam_apps_get_installed_depots(AppId app_id,
                                                 uint32_t depots_size,
                                                 uint32_t *installed_depots);
 
-MistResult mist_steam_apps_get_launch_command_line(const char **launch_command_line);
+MistResult mist_steam_apps_get_launch_command_line(char *command_line, uint32_t command_line_size);
 
 /**
  * Get the value of the launch query param, sets it to NULL if it does not exist

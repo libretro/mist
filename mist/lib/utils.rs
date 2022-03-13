@@ -1,5 +1,5 @@
 use std::{
-    ffi::CStr,
+    ffi::{CStr, CString},
     os::raw::{c_char, c_int},
 };
 
@@ -10,8 +10,6 @@ use crate::{
         MistGamepadTextInputMode,
     },
 };
-
-pub static mut ENTERED_GAMEPAD_TEXT: *mut String = std::ptr::null_mut();
 
 /// Returns the appid of the running application in out ptr
 /// Returns MistResult
@@ -56,37 +54,24 @@ pub extern "C" fn mist_steam_utils_get_entered_gamepad_text_input(
     let mut subprocess = get_subprocess!();
     let text_size = text_size as usize;
 
-    if unsafe { ENTERED_GAMEPAD_TEXT.is_null() } {
+    if let Some(entered_text_cstr) = &subprocess.state_mut().entered_gamepad_text {
+        unsafe {
+            crate::copy_string_out(entered_text_cstr, text, text_size as _);
+        }
+    } else {
         let entered = unwrap_client_result!(subprocess
             .client()
             .steam_utils()
             .get_entered_gamepad_text_input());
 
         if let Some(entered) = entered {
+            let entered_text_cstr = CString::new(entered).unwrap_or_default();
             unsafe {
-                std::ptr::copy_nonoverlapping(
-                    entered.as_ptr() as *mut i8,
-                    text,
-                    entered.len().min(text_size),
-                );
+                crate::copy_string_out(&entered_text_cstr, text, text_size as _);
             }
         } else {
             return Error::SteamUtils(SteamUtilsError::NoGamepadTextEntered).into();
         }
-    } else {
-        {
-            let entered = unsafe { &*ENTERED_GAMEPAD_TEXT };
-            unsafe {
-                std::ptr::copy_nonoverlapping(
-                    entered.as_ptr() as *mut i8,
-                    text,
-                    entered.len().min(text_size),
-                );
-            }
-        }
-
-        drop(unsafe { Box::from_raw(ENTERED_GAMEPAD_TEXT) });
-        unsafe { ENTERED_GAMEPAD_TEXT = std::ptr::null_mut() }
     }
 
     Success
@@ -104,15 +89,11 @@ pub extern "C" fn mist_steam_utils_get_entered_gamepad_text_length(length: *mut 
         .get_entered_gamepad_text_input());
 
     if let Some(entered) = entered {
-        if !unsafe { ENTERED_GAMEPAD_TEXT.is_null() } {
-            drop(unsafe { Box::from_raw(ENTERED_GAMEPAD_TEXT) });
-            unsafe { ENTERED_GAMEPAD_TEXT = std::ptr::null_mut() }
-        }
-
+        let entered_cstr = CString::new(entered).unwrap();
         unsafe {
-            *length = entered.len() as u32;
-            ENTERED_GAMEPAD_TEXT = Box::into_raw(Box::new(entered));
+            *length = entered_cstr.as_bytes().len() as u32;
         }
+        subprocess.state_mut().entered_gamepad_text = Some(entered_cstr);
     } else {
         return Error::SteamUtils(SteamUtilsError::NoGamepadTextEntered).into();
     }

@@ -8,37 +8,25 @@ use crate::{
     types::*,
 };
 
-#[repr(C)]
-#[derive(Clone, Copy)]
-pub struct MistDlcData {
-    pub app_id: AppId,
-    pub avaliable: bool,
-    pub name: *const c_char,
-}
-
 /// Get the metadata for the dlc by dlc index
 /// Returns MistResult
 /// dlc_data is only guaranteed to be valid til the next time the function is called
 #[no_mangle]
 pub extern "C" fn mist_steam_apps_get_dlc_data_by_index(
     dlc: i32,
-    dlc_data: *mut MistDlcData,
+    app_id: *mut AppId,
+    availiable: *mut bool,
+    name: *mut c_char,
+    name_size: u32,
 ) -> MistResult {
     let mut subprocess = get_subprocess!();
     let dlc = unwrap_client_result!(subprocess.client().steam_apps().get_dlc_data_by_index(dlc));
-
-    static mut DLC_DATA_NAME: Option<CString> = None;
-    static mut DLC_DATA: Option<MistDlcData> = None;
+    let name_cstr = CString::new(dlc.name).unwrap_or_default();
 
     unsafe {
-        DLC_DATA_NAME = Some(CString::new(dlc.name).unwrap_or_default());
-        DLC_DATA = Some(MistDlcData {
-            app_id: dlc.app_id,
-            avaliable: dlc.avaliable,
-            name: DLC_DATA_NAME.as_ref().unwrap().as_ptr(),
-        });
-
-        *dlc_data = DLC_DATA.unwrap();
+        *app_id = dlc.app_id;
+        *availiable = dlc.avaliable;
+        crate::copy_string_out(&name_cstr, name, name_size as _);
     }
 
     Success
@@ -184,30 +172,26 @@ pub extern "C" fn mist_steam_apps_get_app_build_id(build_id: *mut BuildId) -> Mi
 #[no_mangle]
 pub extern "C" fn mist_steam_apps_get_app_install_dir(
     app_id: AppId,
-    app_install_dir: *mut *const c_char,
+    folder: *mut c_char,
+    folder_size: u32,
+    folder_copied: *mut u32,
 ) -> MistResult {
     let mut subprocess = get_subprocess!();
     let install_dir =
         unwrap_client_result!(subprocess.client().steam_apps().get_app_install_dir(app_id));
 
-    static mut APP_INSTALL_DIR: Option<CString> = None;
-
     match install_dir {
         Some(install) => {
+            let install_cstr = CString::new(install).unwrap_or_default();
+
             unsafe {
-                APP_INSTALL_DIR = Some(CString::new(install).unwrap_or_default());
-                *app_install_dir = APP_INSTALL_DIR.as_ref().unwrap().as_ptr();
+                *folder_copied =
+                    crate::copy_string_out(&install_cstr, folder, folder_size as _) as u32;
             }
 
             Success
         }
-        None => {
-            unsafe {
-                APP_INSTALL_DIR = None;
-            }
-            mist_log_error!(&format!("Invalid app id to get install dir: {}", app_id));
-            Success
-        }
+        None => Success,
     }
 }
 
@@ -227,16 +211,24 @@ pub extern "C" fn mist_steam_apps_get_available_game_languages(
     avaliable_languages: *mut *const c_char,
 ) -> MistResult {
     let mut subprocess = get_subprocess!();
-    let game_languages = unwrap_client_result!(subprocess
-        .client()
-        .steam_apps()
-        .get_available_game_languages());
 
-    static mut AVALIABLE_LANGUAGES: Option<CString> = None;
+    if let Some(langs) = &subprocess.state().avaliable_languages {
+        unsafe {
+            *avaliable_languages = langs.as_ptr();
+        }
+    } else {
+        let game_languages = unwrap_client_result!(subprocess
+            .client()
+            .steam_apps()
+            .get_available_game_languages());
 
-    unsafe {
-        AVALIABLE_LANGUAGES = Some(CString::new(game_languages).unwrap_or_default());
-        *avaliable_languages = AVALIABLE_LANGUAGES.as_ref().unwrap().as_ptr();
+        let game_languages_cstr = CString::new(game_languages).unwrap_or_default();
+
+        unsafe {
+            *avaliable_languages = game_languages_cstr.as_ptr();
+        }
+
+        subprocess.state_mut().avaliable_languages = Some(game_languages_cstr);
     }
 
     Success
@@ -247,21 +239,24 @@ pub extern "C" fn mist_steam_apps_get_available_game_languages(
 /// Returns MistResult
 #[no_mangle]
 pub extern "C" fn mist_steam_apps_get_current_beta_name(
-    current_beta_name: *mut *const c_char,
+    on_beta: *mut bool,
+    name: *mut c_char,
+    name_size: u32,
 ) -> MistResult {
     let mut subprocess = get_subprocess!();
-    let beta = unwrap_client_result!(subprocess.client().steam_apps().get_current_beta_name());
 
-    static mut BETA_NAME: Option<CString> = None;
+    let beta = unwrap_client_result!(subprocess.client().steam_apps().get_current_beta_name());
 
     match beta {
         Some(beta) => unsafe {
-            BETA_NAME = Some(CString::new(beta).unwrap_or_default());
-            *current_beta_name = BETA_NAME.as_ref().unwrap().as_ptr();
+            *on_beta = true;
+
+            let beta_cstr = CString::new(beta).unwrap_or_default();
+
+            crate::copy_string_out(&beta_cstr, name, name_size as _);
         },
         None => unsafe {
-            BETA_NAME = None;
-            *current_beta_name = std::ptr::null_mut();
+            *on_beta = false;
         },
     }
 
@@ -275,14 +270,22 @@ pub extern "C" fn mist_steam_apps_get_current_game_language(
     current_game_language: *mut *const c_char,
 ) -> MistResult {
     let mut subprocess = get_subprocess!();
-    let current_language =
-        unwrap_client_result!(subprocess.client().steam_apps().get_current_game_language());
 
-    static mut CURRENT_LANGUAGE: Option<CString> = None;
+    if let Some(lang) = &subprocess.state().current_language {
+        unsafe {
+            *current_game_language = lang.as_ptr();
+        }
+    } else {
+        let current_language =
+            unwrap_client_result!(subprocess.client().steam_apps().get_current_game_language());
 
-    unsafe {
-        CURRENT_LANGUAGE = Some(CString::new(current_language).unwrap_or_default());
-        *current_game_language = CURRENT_LANGUAGE.as_ref().unwrap().as_ptr();
+        let current_language_cstr = CString::new(current_language).unwrap_or_default();
+
+        unsafe {
+            *current_game_language = current_language_cstr.as_ptr();
+        }
+
+        subprocess.state_mut().current_language = Some(current_language_cstr);
     }
 
     Success
@@ -364,7 +367,7 @@ pub extern "C" fn mist_steam_apps_get_installed_depots(
 
     unsafe {
         let count = depots_size.min(depot_ids.len() as u32);
-        std::ptr::copy(depot_ids.as_ptr(), depots, count as usize);
+        std::ptr::copy_nonoverlapping(depot_ids.as_ptr(), depots, count as usize);
         *installed_depots = count;
     }
 
@@ -373,17 +376,17 @@ pub extern "C" fn mist_steam_apps_get_installed_depots(
 
 #[no_mangle]
 pub extern "C" fn mist_steam_apps_get_launch_command_line(
-    launch_command_line: *mut *const c_char,
+    command_line: *mut c_char,
+    command_line_size: u32,
 ) -> MistResult {
     let mut subprocess = get_subprocess!();
     let launch_command =
-        unwrap_client_result!(subprocess.client().steam_apps().get_current_game_language());
+        unwrap_client_result!(subprocess.client().steam_apps().get_launch_command_line());
 
-    static mut LAUNCH_COMMAND_LINE: Option<CString> = None;
+    let launch_command_cstr = CString::new(launch_command).unwrap_or_default();
 
     unsafe {
-        LAUNCH_COMMAND_LINE = Some(CString::new(launch_command).unwrap_or_default());
-        *launch_command_line = LAUNCH_COMMAND_LINE.as_ref().unwrap().as_ptr();
+        crate::copy_string_out(&launch_command_cstr, command_line, command_line_size as _);
     }
 
     Success
@@ -399,20 +402,35 @@ pub extern "C" fn mist_steam_apps_get_launch_query_param(
 ) -> MistResult {
     let mut subprocess = get_subprocess!();
     let key = unsafe { CStr::from_ptr(key) }.to_string_lossy().to_string();
-    let param_value =
-        unwrap_client_result!(subprocess.client().steam_apps().get_launch_query_param(key));
 
-    static mut QUERY_LAUNCH_PARAM: Option<CString> = None;
+    if let Some(param_value_cstr) = subprocess.state().launch_query_params.get(&key) {
+        unsafe {
+            *value = param_value_cstr.as_ptr();
+        }
+    } else {
+        let param_value = unwrap_client_result!(subprocess
+            .client()
+            .steam_apps()
+            .get_launch_query_param(key.clone()));
 
-    match param_value {
-        Some(param_value) => unsafe {
-            QUERY_LAUNCH_PARAM = Some(CString::new(param_value).unwrap_or_default());
-            *value = QUERY_LAUNCH_PARAM.as_ref().unwrap().as_ptr();
-        },
-        None => unsafe {
-            QUERY_LAUNCH_PARAM = None;
-            *value = std::ptr::null_mut();
-        },
+        match param_value {
+            Some(param_value) => {
+                let param_value_cstr = CString::new(param_value).unwrap_or_default();
+
+                unsafe {
+                    *value = param_value_cstr.as_ptr();
+                }
+
+                subprocess
+                    .state_mut()
+                    .launch_query_params
+                    .insert(key, param_value_cstr);
+            }
+            None => unsafe {
+                const EMPTY: [c_char; 1] = [0];
+                *value = &EMPTY as *const c_char;
+            },
+        }
     }
 
     Success

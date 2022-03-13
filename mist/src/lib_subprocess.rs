@@ -1,5 +1,9 @@
 use parking_lot::Mutex;
-use std::process::{Child, ChildStdin, ChildStdout, Command, Stdio};
+use std::{
+    collections::HashMap,
+    ffi::CString,
+    process::{Child, ChildStdin, ChildStdout, Command, Stdio},
+};
 
 use crate::{
     result::{Error, MistError},
@@ -26,31 +30,23 @@ macro_rules! get_subprocess {
             return crate::result::Error::Mist(crate::result::MistError::SubprocessNotInitialized)
                 .into();
         }
-    }
+    }};
+}
 
-    /*match $crate::lib_subprocess::SUBPROCESS.lock() {
-        Some(s) => {
-            if s.is_alive() {
-                s
-            } else {
-                crate::mist_log_error("The subprocess has died");
-                return crate::result::Error::Mist(crate::result::MistError::SubprocessLost)
-                    .into();
-            }
-        }
-        None => {
-            crate::mist_log_error("Subprocess has not been initialized");
-            return crate::result::Error::Mist(
-                crate::result::MistError::SubprocessNotInitialized,
-            )
-            .into();
-        }
-    }*/};
+#[derive(Default)]
+pub struct SubprocessState {
+    pub avaliable_languages: Option<CString>,
+    pub beta_name: Option<CString>,
+    pub current_language: Option<CString>,
+    pub entered_gamepad_text: Option<CString>,
+    pub launch_query_params: HashMap<String, CString>,
+    pub has_processed_callback: bool,
 }
 
 pub struct MistSubprocess {
     client: MistClient<ChildStdout, ChildStdin>,
     proc: Child,
+    state: SubprocessState,
 }
 
 impl MistSubprocess {
@@ -63,6 +59,14 @@ impl MistSubprocess {
             .try_wait()
             .map(|exit| exit.is_none())
             .unwrap_or(false)
+    }
+
+    pub fn state(&self) -> &SubprocessState {
+        &self.state
+    }
+
+    pub fn state_mut(&mut self) -> &mut SubprocessState {
+        &mut self.state
     }
 }
 
@@ -116,7 +120,11 @@ pub fn mist_init_subprocess() -> Result<(), Error> {
     };
 
     let client = MistClient::create(proc.stdout.take().unwrap(), proc.stdin.take().unwrap());
-    let subprocess = MistSubprocess { client, proc };
+    let subprocess = MistSubprocess {
+        client,
+        proc,
+        state: SubprocessState::default(),
+    };
 
     // Set the subprocess
     *SUBPROCESS.lock() = Some(subprocess);
