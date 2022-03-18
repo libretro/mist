@@ -11,6 +11,7 @@ pub fn run() -> Result<()> {
         steam_apps: unsafe { steamworks_sys::SteamAPI_SteamApps_v008() },
         steam_pipe: unsafe { steamworks_sys::SteamAPI_GetHSteamPipe() },
         steam_friends: unsafe { steamworks_sys::SteamAPI_SteamFriends_v017() },
+        steam_input: unsafe { steamworks_sys::SteamAPI_SteamInput_v006() },
         steam_remote_storage: unsafe { steamworks_sys::SteamAPI_SteamRemoteStorage_v016() },
         steam_user: unsafe { steamworks_sys::SteamAPI_GetHSteamUser() },
         steam_utils: unsafe { steamworks_sys::SteamAPI_SteamUtils_v010() },
@@ -73,6 +74,7 @@ pub struct MistServerService {
     steam_apps: *mut steamworks_sys::ISteamApps,
     steam_pipe: steamworks_sys::HSteamPipe,
     steam_friends: *mut steamworks_sys::ISteamFriends,
+    steam_input: *mut steamworks_sys::ISteamInput,
     steam_remote_storage: *mut steamworks_sys::ISteamRemoteStorage,
     steam_user: steamworks_sys::HSteamUser,
     steam_utils: *mut steamworks_sys::ISteamUtils,
@@ -82,6 +84,7 @@ pub struct MistServerService {
 
 mod apps;
 mod friends;
+mod input;
 mod remote_storage;
 mod utils;
 

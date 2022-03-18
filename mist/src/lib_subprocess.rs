@@ -8,6 +8,7 @@ use std::{
 use crate::{
     result::{Error, MistError},
     service::{MistClient, MistServiceToLibrary},
+    types::*,
 };
 
 lazy_static::lazy_static! {
@@ -40,6 +41,16 @@ pub struct SubprocessState {
     pub current_language: Option<CString>,
     pub entered_gamepad_text: Option<CString>,
     pub launch_query_params: HashMap<String, CString>,
+    pub glpyh_png: HashMap<
+        (
+            MistInputActionOrigin,
+            MistSteamInputGlyphSize,
+            MistSteamInputGlyphStyle,
+        ),
+        CString,
+    >,
+    pub glpyh_svg: HashMap<(MistInputActionOrigin, MistSteamInputGlyphStyle), CString>,
+    pub origin_strings: HashMap<MistInputActionOrigin, CString>,
     pub has_processed_callback: bool,
 }
 

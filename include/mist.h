@@ -13,6 +13,24 @@
 #define MIST_IS_SUCCESS(result) (MIST_RESULT_CODE(result) == MistResult_Success)
 #define MIST_IS_ERROR(result) (!MIST_IS_SUCCESS(result))
 
+#define MIST_STEAM_INPUT_HANDLE_ALL_CONTROLLERS UINT64_MAX
+
+#define MIST_STEAM_INPUT_MAX_COUNT 16
+
+#define MIST_STEAM_INPUT_MAX_ANALOG_ACTIONS 16
+
+#define MIST_STEAM_INPUT_MAX_DIGITAL_ACTIONS 128
+
+#define MIST_STEAM_INPUT_MAX_ORIGINS 8
+
+#define MIST_STEAM_INPUT_MAX_ACTIVE_LAYERS 16
+
+typedef enum MistControllerHapticLocation {
+  MistControllerHapticLocation_Left = 1,
+  MistControllerHapticLocation_Right = 2,
+  MistControllerHapticLocation_Both = (1 | 2),
+} MistControllerHapticLocation;
+
 typedef enum MistFloatingGamepadTextInputMode {
   MistFloatingGamepadTextInputMode_SingleLine = 0,
   MistFloatingGamepadTextInputMode_MultipleLines = 1,
@@ -29,6 +47,286 @@ typedef enum MistGamepadTextInputMode {
   MistGamepadTextInputMode_Normal = 0,
   MistGamepadTextInputMode_Password = 1,
 } MistGamepadTextInputMode;
+
+enum MistInputActionOrigin {
+  MistInputActionOrigin_None = 0,
+  MistInputActionOrigin_A = 1,
+  MistInputActionOrigin_B = 2,
+  MistInputActionOrigin_X = 3,
+  MistInputActionOrigin_Y = 4,
+  MistInputActionOrigin_LeftBumper = 5,
+  MistInputActionOrigin_RightBumper = 6,
+  MistInputActionOrigin_LeftGrip = 7,
+  MistInputActionOrigin_RightGrip = 8,
+  MistInputActionOrigin_Start = 9,
+  MistInputActionOrigin_Back = 10,
+  MistInputActionOrigin_LeftPad_Touch = 11,
+  MistInputActionOrigin_LeftPad_Swipe = 12,
+  MistInputActionOrigin_LeftPad_Click = 13,
+  MistInputActionOrigin_LeftPad_DPadNorth = 14,
+  MistInputActionOrigin_LeftPad_DPadSouth = 15,
+  MistInputActionOrigin_LeftPad_DPadWest = 16,
+  MistInputActionOrigin_LeftPad_DPadEast = 17,
+  MistInputActionOrigin_RightPad_Touch = 18,
+  MistInputActionOrigin_RightPad_Swipe = 19,
+  MistInputActionOrigin_RightPad_Click = 20,
+  MistInputActionOrigin_RightPad_DPadNorth = 21,
+  MistInputActionOrigin_RightPad_DPadSouth = 22,
+  MistInputActionOrigin_RightPad_DPadWest = 23,
+  MistInputActionOrigin_RightPad_DPadEast = 24,
+  MistInputActionOrigin_LeftTrigger_Pull = 25,
+  MistInputActionOrigin_LeftTrigger_Click = 26,
+  MistInputActionOrigin_RightTrigger_Pull = 27,
+  MistInputActionOrigin_RightTrigger_Click = 28,
+  MistInputActionOrigin_LeftStick_Move = 29,
+  MistInputActionOrigin_LeftStick_Click = 30,
+  MistInputActionOrigin_LeftStick_DPadNorth = 31,
+  MistInputActionOrigin_LeftStick_DPadSouth = 32,
+  MistInputActionOrigin_LeftStick_DPadWest = 33,
+  MistInputActionOrigin_LeftStick_DPadEast = 34,
+  MistInputActionOrigin_Gyro_Move = 35,
+  MistInputActionOrigin_Gyro_Pitch = 36,
+  MistInputActionOrigin_Gyro_Yaw = 37,
+  MistInputActionOrigin_Gyro_Roll = 38,
+  MistInputActionOrigin_SteamController_Reserved0 = 39,
+  MistInputActionOrigin_SteamController_Reserved1 = 40,
+  MistInputActionOrigin_SteamController_Reserved2 = 41,
+  MistInputActionOrigin_SteamController_Reserved3 = 42,
+  MistInputActionOrigin_SteamController_Reserved4 = 43,
+  MistInputActionOrigin_SteamController_Reserved5 = 44,
+  MistInputActionOrigin_SteamController_Reserved6 = 45,
+  MistInputActionOrigin_SteamController_Reserved7 = 46,
+  MistInputActionOrigin_SteamController_Reserved8 = 47,
+  MistInputActionOrigin_SteamController_Reserved9 = 48,
+  MistInputActionOrigin_SteamController_Reserved10 = 49,
+  MistInputActionOrigin_PS4_X = 50,
+  MistInputActionOrigin_PS4_Circle = 51,
+  MistInputActionOrigin_PS4_Triangle = 52,
+  MistInputActionOrigin_PS4_Square = 53,
+  MistInputActionOrigin_PS4_LeftBumper = 54,
+  MistInputActionOrigin_PS4_RightBumper = 55,
+  MistInputActionOrigin_PS4_Options = 56,
+  MistInputActionOrigin_PS4_Share = 57,
+  MistInputActionOrigin_PS4_LeftPad_Touch = 58,
+  MistInputActionOrigin_PS4_LeftPad_Swipe = 59,
+  MistInputActionOrigin_PS4_LeftPad_Click = 60,
+  MistInputActionOrigin_PS4_LeftPad_DPadNorth = 61,
+  MistInputActionOrigin_PS4_LeftPad_DPadSouth = 62,
+  MistInputActionOrigin_PS4_LeftPad_DPadWest = 63,
+  MistInputActionOrigin_PS4_LeftPad_DPadEast = 64,
+  MistInputActionOrigin_PS4_RightPad_Touch = 65,
+  MistInputActionOrigin_PS4_RightPad_Swipe = 66,
+  MistInputActionOrigin_PS4_RightPad_Click = 67,
+  MistInputActionOrigin_PS4_RightPad_DPadNorth = 68,
+  MistInputActionOrigin_PS4_RightPad_DPadSouth = 69,
+  MistInputActionOrigin_PS4_RightPad_DPadWest = 70,
+  MistInputActionOrigin_PS4_RightPad_DPadEast = 71,
+  MistInputActionOrigin_PS4_CenterPad_Touch = 72,
+  MistInputActionOrigin_PS4_CenterPad_Swipe = 73,
+  MistInputActionOrigin_PS4_CenterPad_Click = 74,
+  MistInputActionOrigin_PS4_CenterPad_DPadNorth = 75,
+  MistInputActionOrigin_PS4_CenterPad_DPadSouth = 76,
+  MistInputActionOrigin_PS4_CenterPad_DPadWest = 77,
+  MistInputActionOrigin_PS4_CenterPad_DPadEast = 78,
+  MistInputActionOrigin_PS4_LeftTrigger_Pull = 79,
+  MistInputActionOrigin_PS4_LeftTrigger_Click = 80,
+  MistInputActionOrigin_PS4_RightTrigger_Pull = 81,
+  MistInputActionOrigin_PS4_RightTrigger_Click = 82,
+  MistInputActionOrigin_PS4_LeftStick_Move = 83,
+  MistInputActionOrigin_PS4_LeftStick_Click = 84,
+  MistInputActionOrigin_PS4_LeftStick_DPadNorth = 85,
+  MistInputActionOrigin_PS4_LeftStick_DPadSouth = 86,
+  MistInputActionOrigin_PS4_LeftStick_DPadWest = 87,
+  MistInputActionOrigin_PS4_LeftStick_DPadEast = 88,
+  MistInputActionOrigin_PS4_RightStick_Move = 89,
+  MistInputActionOrigin_PS4_RightStick_Click = 90,
+  MistInputActionOrigin_PS4_RightStick_DPadNorth = 91,
+  MistInputActionOrigin_PS4_RightStick_DPadSouth = 92,
+  MistInputActionOrigin_PS4_RightStick_DPadWest = 93,
+  MistInputActionOrigin_PS4_RightStick_DPadEast = 94,
+  MistInputActionOrigin_PS4_DPad_North = 95,
+  MistInputActionOrigin_PS4_DPad_South = 96,
+  MistInputActionOrigin_PS4_DPad_West = 97,
+  MistInputActionOrigin_PS4_DPad_East = 98,
+  MistInputActionOrigin_PS4_Gyro_Move = 99,
+  MistInputActionOrigin_PS4_Gyro_Pitch = 100,
+  MistInputActionOrigin_PS4_Gyro_Yaw = 101,
+  MistInputActionOrigin_PS4_Gyro_Roll = 102,
+  MistInputActionOrigin_PS4_Reserved0 = 103,
+  MistInputActionOrigin_PS4_Reserved1 = 104,
+  MistInputActionOrigin_PS4_Reserved2 = 105,
+  MistInputActionOrigin_PS4_Reserved3 = 106,
+  MistInputActionOrigin_PS4_Reserved4 = 107,
+  MistInputActionOrigin_PS4_Reserved5 = 108,
+  MistInputActionOrigin_PS4_Reserved6 = 109,
+  MistInputActionOrigin_PS4_Reserved7 = 110,
+  MistInputActionOrigin_PS4_Reserved8 = 111,
+  MistInputActionOrigin_PS4_Reserved9 = 112,
+  MistInputActionOrigin_PS4_Reserved10 = 113,
+  MistInputActionOrigin_XBoxOne_A = 114,
+  MistInputActionOrigin_XBoxOne_B = 115,
+  MistInputActionOrigin_XBoxOne_X = 116,
+  MistInputActionOrigin_XBoxOne_Y = 117,
+  MistInputActionOrigin_XBoxOne_LeftBumper = 118,
+  MistInputActionOrigin_XBoxOne_RightBumper = 119,
+  MistInputActionOrigin_XBoxOne_Menu = 120,
+  MistInputActionOrigin_XBoxOne_View = 121,
+  MistInputActionOrigin_XBoxOne_LeftTrigger_Pull = 122,
+  MistInputActionOrigin_XBoxOne_LeftTrigger_Click = 123,
+  MistInputActionOrigin_XBoxOne_RightTrigger_Pull = 124,
+  MistInputActionOrigin_XBoxOne_RightTrigger_Click = 125,
+  MistInputActionOrigin_XBoxOne_LeftStick_Move = 126,
+  MistInputActionOrigin_XBoxOne_LeftStick_Click = 127,
+  MistInputActionOrigin_XBoxOne_LeftStick_DPadNorth = 128,
+  MistInputActionOrigin_XBoxOne_LeftStick_DPadSouth = 129,
+  MistInputActionOrigin_XBoxOne_LeftStick_DPadWest = 130,
+  MistInputActionOrigin_XBoxOne_LeftStick_DPadEast = 131,
+  MistInputActionOrigin_XBoxOne_RightStick_Move = 132,
+  MistInputActionOrigin_XBoxOne_RightStick_Click = 133,
+  MistInputActionOrigin_XBoxOne_RightStick_DPadNorth = 134,
+  MistInputActionOrigin_XBoxOne_RightStick_DPadSouth = 135,
+  MistInputActionOrigin_XBoxOne_RightStick_DPadWest = 136,
+  MistInputActionOrigin_XBoxOne_RightStick_DPadEast = 137,
+  MistInputActionOrigin_XBoxOne_DPad_North = 138,
+  MistInputActionOrigin_XBoxOne_DPad_South = 139,
+  MistInputActionOrigin_XBoxOne_DPad_West = 140,
+  MistInputActionOrigin_XBoxOne_DPad_East = 141,
+  MistInputActionOrigin_XBoxOne_Reserved0 = 142,
+  MistInputActionOrigin_XBoxOne_Reserved1 = 143,
+  MistInputActionOrigin_XBoxOne_Reserved2 = 144,
+  MistInputActionOrigin_XBoxOne_Reserved3 = 145,
+  MistInputActionOrigin_XBoxOne_Reserved4 = 146,
+  MistInputActionOrigin_XBoxOne_Reserved5 = 147,
+  MistInputActionOrigin_XBoxOne_Reserved6 = 148,
+  MistInputActionOrigin_XBoxOne_Reserved7 = 149,
+  MistInputActionOrigin_XBoxOne_Reserved8 = 150,
+  MistInputActionOrigin_XBoxOne_Reserved9 = 151,
+  MistInputActionOrigin_XBoxOne_Reserved10 = 152,
+  MistInputActionOrigin_XBox360_A = 153,
+  MistInputActionOrigin_XBox360_B = 154,
+  MistInputActionOrigin_XBox360_X = 155,
+  MistInputActionOrigin_XBox360_Y = 156,
+  MistInputActionOrigin_XBox360_LeftBumper = 157,
+  MistInputActionOrigin_XBox360_RightBumper = 158,
+  MistInputActionOrigin_XBox360_Start = 159,
+  MistInputActionOrigin_XBox360_Back = 160,
+  MistInputActionOrigin_XBox360_LeftTrigger_Pull = 161,
+  MistInputActionOrigin_XBox360_LeftTrigger_Click = 162,
+  MistInputActionOrigin_XBox360_RightTrigger_Pull = 163,
+  MistInputActionOrigin_XBox360_RightTrigger_Click = 164,
+  MistInputActionOrigin_XBox360_LeftStick_Move = 165,
+  MistInputActionOrigin_XBox360_LeftStick_Click = 166,
+  MistInputActionOrigin_XBox360_LeftStick_DPadNorth = 167,
+  MistInputActionOrigin_XBox360_LeftStick_DPadSouth = 168,
+  MistInputActionOrigin_XBox360_LeftStick_DPadWest = 169,
+  MistInputActionOrigin_XBox360_LeftStick_DPadEast = 170,
+  MistInputActionOrigin_XBox360_RightStick_Move = 171,
+  MistInputActionOrigin_XBox360_RightStick_Click = 172,
+  MistInputActionOrigin_XBox360_RightStick_DPadNorth = 173,
+  MistInputActionOrigin_XBox360_RightStick_DPadSouth = 174,
+  MistInputActionOrigin_XBox360_RightStick_DPadWest = 175,
+  MistInputActionOrigin_XBox360_RightStick_DPadEast = 176,
+  MistInputActionOrigin_XBox360_DPad_North = 177,
+  MistInputActionOrigin_XBox360_DPad_South = 178,
+  MistInputActionOrigin_XBox360_DPad_West = 179,
+  MistInputActionOrigin_XBox360_DPad_East = 180,
+  MistInputActionOrigin_XBox360_Reserved0 = 181,
+  MistInputActionOrigin_XBox360_Reserved1 = 182,
+  MistInputActionOrigin_XBox360_Reserved2 = 183,
+  MistInputActionOrigin_XBox360_Reserved3 = 184,
+  MistInputActionOrigin_XBox360_Reserved4 = 185,
+  MistInputActionOrigin_XBox360_Reserved5 = 186,
+  MistInputActionOrigin_XBox360_Reserved6 = 187,
+  MistInputActionOrigin_XBox360_Reserved7 = 188,
+  MistInputActionOrigin_XBox360_Reserved8 = 189,
+  MistInputActionOrigin_XBox360_Reserved9 = 190,
+  MistInputActionOrigin_XBox360_Reserved10 = 191,
+  MistInputActionOrigin_Switch_A = 192,
+  MistInputActionOrigin_Switch_B = 193,
+  MistInputActionOrigin_Switch_X = 194,
+  MistInputActionOrigin_Switch_Y = 195,
+  MistInputActionOrigin_Switch_LeftBumper = 196,
+  MistInputActionOrigin_Switch_RightBumper = 197,
+  MistInputActionOrigin_Switch_Plus = 198,
+  MistInputActionOrigin_Switch_Minus = 199,
+  MistInputActionOrigin_Switch_Capture = 200,
+  MistInputActionOrigin_Switch_LeftTrigger_Pull = 201,
+  MistInputActionOrigin_Switch_LeftTrigger_Click = 202,
+  MistInputActionOrigin_Switch_RightTrigger_Pull = 203,
+  MistInputActionOrigin_Switch_RightTrigger_Click = 204,
+  MistInputActionOrigin_Switch_LeftStick_Move = 205,
+  MistInputActionOrigin_Switch_LeftStick_Click = 206,
+  MistInputActionOrigin_Switch_LeftStick_DPadNorth = 207,
+  MistInputActionOrigin_Switch_LeftStick_DPadSouth = 208,
+  MistInputActionOrigin_Switch_LeftStick_DPadWest = 209,
+  MistInputActionOrigin_Switch_LeftStick_DPadEast = 210,
+  MistInputActionOrigin_Switch_RightStick_Move = 211,
+  MistInputActionOrigin_Switch_RightStick_Click = 212,
+  MistInputActionOrigin_Switch_RightStick_DPadNorth = 213,
+  MistInputActionOrigin_Switch_RightStick_DPadSouth = 214,
+  MistInputActionOrigin_Switch_RightStick_DPadWest = 215,
+  MistInputActionOrigin_Switch_RightStick_DPadEast = 216,
+  MistInputActionOrigin_Switch_DPad_North = 217,
+  MistInputActionOrigin_Switch_DPad_South = 218,
+  MistInputActionOrigin_Switch_DPad_West = 219,
+  MistInputActionOrigin_Switch_DPad_East = 220,
+  MistInputActionOrigin_SwitchProGyro_Move = 221,
+  MistInputActionOrigin_SwitchProGyro_Pitch = 222,
+  MistInputActionOrigin_SwitchProGyro_Yaw = 223,
+  MistInputActionOrigin_SwitchProGyro_Roll = 224,
+  MistInputActionOrigin_Switch_Reserved0 = 225,
+  MistInputActionOrigin_Switch_Reserved1 = 226,
+  MistInputActionOrigin_Switch_Reserved2 = 227,
+  MistInputActionOrigin_Switch_Reserved3 = 228,
+  MistInputActionOrigin_Switch_Reserved4 = 229,
+  MistInputActionOrigin_Switch_Reserved5 = 230,
+  MistInputActionOrigin_Switch_Reserved6 = 231,
+  MistInputActionOrigin_Switch_Reserved7 = 232,
+  MistInputActionOrigin_Switch_Reserved8 = 233,
+  MistInputActionOrigin_Switch_Reserved9 = 234,
+  MistInputActionOrigin_Switch_Reserved10 = 235,
+  MistInputActionOrigin_Count = 258,
+  MistInputActionOrigin_MaximumPossibleValue = 32767,
+};
+typedef uint32_t MistInputActionOrigin;
+
+typedef enum MistSteamControllerLEDFlag {
+  MistSteamControllerLEDFlag_SetColor = 0,
+  MistSteamControllerLEDFlag_RestoreUserDefault = 1,
+} MistSteamControllerLEDFlag;
+
+typedef enum MistSteamInputGlyphSize {
+  MistSteamInputGlyphSize_Small = 0,
+  MistSteamInputGlyphSize_Medium,
+  MistSteamInputGlyphSize_Large,
+  MistSteamInputGlyphSize_Count,
+} MistSteamInputGlyphSize;
+
+typedef enum MistSteamInputGlyphStyle {
+  MistSteamInputGlyphStyle_Knockout = 0,
+  MistSteamInputGlyphStyle_Light = 1,
+  MistSteamInputGlyphStyle_Dark = 2,
+  MistSteamInputGlyphStyle_NeutralColorABXY = 16,
+  MistSteamInputGlyphStyle_SolidABXY = 32,
+} MistSteamInputGlyphStyle;
+
+typedef enum MistSteamInputType {
+  MistSteamInputType_Unknown = 0,
+  MistSteamInputType_SteamController = 1,
+  MistSteamInputType_XBox360Controller = 2,
+  MistSteamInputType_XBoxOneController = 3,
+  MistSteamInputType_GenericXInput = 4,
+  MistSteamInputType_PS4Controller = 5,
+  MistSteamInputType_AppleMFiController = 6,
+  MistSteamInputType_AndroidController = 7,
+  MistSteamInputType_SwitchJoyConPair = 8,
+  MistSteamInputType_SwitchJoyConSingle = 9,
+  MistSteamInputType_SwitchProController = 10,
+  MistSteamInputType_MobileTouch = 11,
+  MistSteamInputType_PS3Controller = 12,
+  MistSteamInputType_Count = 13,
+  MistSteamInputType_MaximumPossibleValue = 255,
+} MistSteamInputType;
 
 typedef uint32_t MistResult;
 
@@ -47,6 +345,14 @@ typedef int32_t BuildId;
 typedef uint64_t SteamId;
 
 typedef uint32_t DepotId;
+
+typedef uint64_t MistInputHandle;
+
+typedef uint64_t MistInputActionSetHandle;
+
+typedef uint64_t MistInputAnalogActionHandle;
+
+typedef uint64_t MistInputDigitalActionHandle;
 
 /**
  * Init mist, this is throwns an error if it was already initialised
@@ -250,6 +556,229 @@ MistResult mist_steam_friends_clear_rich_presence(void);
  * Returns MistResult
  */
 MistResult mist_steam_friends_set_rich_presence(const char *key, const char *value);
+
+/**
+ * Makes the input controller use the action set
+ * Returns MistResult
+ */
+MistResult mist_steam_input_activate_action_set(MistInputHandle input_handle,
+                                                MistInputActionSetHandle action_set_handle);
+
+/**
+ * Makes the input controller use the action set layer
+ * Returns MistResult
+ */
+MistResult mist_steam_input_activate_action_set_layer(MistInputHandle input_handle,
+                                                      MistInputActionSetHandle action_set_layer_handle);
+
+/**
+ * Deactivates the input layer on the controller
+ * Returns MistResult
+ */
+MistResult mist_steam_input_deactivate_action_set_layer(MistInputHandle input_handle,
+                                                        MistInputActionSetHandle action_set_layer_handle);
+
+/**
+ * Deactivates the input layer on the controller
+ * Returns MistResult
+ */
+MistResult mist_steam_input_deactivate_all_action_set_layers(MistInputHandle input_handle);
+
+/**
+ * Get action set handles to the current action set layers for controller
+ * Puts the handles in the handles_out parameter which needs to be a array of length MIST_STEAM_INPUT_MAX_COUNT
+ * The count will be put in handles_count
+ * Returns MistResult
+ */
+MistResult mist_steam_input_get_active_action_set_layers(MistInputHandle input_handle,
+                                                         MistInputActionSetHandle *handles_out,
+                                                         uintptr_t *handles_count);
+
+/**
+ * Get the action set from name
+ * The action set is put in action_set_handle
+ * Returns MistResult
+ */
+MistResult mist_steam_input_get_action_set_handle(const char *action_set_name,
+                                                  MistInputActionSetHandle *action_set_handle);
+
+/**
+ * Get the analog action handle from name
+ * The action handle is put in analog_action_handle
+ * Returns MistResult
+ */
+MistResult mist_steam_input_get_analog_action_handle(const char *action_name,
+                                                     MistInputAnalogActionHandle *analog_action_handle);
+
+/**
+ * Get all the origins for a digital action
+ * Puts the origins in the origins_out parameter which needs to be a array of length MIST_STEAM_INPUT_MAX_ORIGINS
+ * The count will be put in origins_count
+ * Returns MistResult
+ */
+MistResult mist_steam_input_get_analog_action_origins(MistInputHandle input_handle,
+                                                      MistInputActionSetHandle action_set_handle,
+                                                      MistInputAnalogActionHandle analog_action_handle,
+                                                      MistInputHandle *origins_out,
+                                                      uintptr_t *origins_count);
+
+/**
+ * Get the input handles for all controllers
+ * Puts the handles in the handles_out parameter which needs to be a array of length MIST_STEAM_INPUT_MAX_COUNT
+ * The count will be put in handles_count
+ * Returns MistResult
+ */
+MistResult mist_steam_input_get_connected_controllers(MistInputHandle *handles_out,
+                                                      uintptr_t *handles_count);
+
+/**
+ * Get the input handle for a gamepad at index
+ * Puts the input handle into input_handle
+ * Returns MistResult
+ */
+MistResult mist_steam_input_get_controller_for_gamepad_index(int index,
+                                                             MistInputHandle *input_handle);
+
+/**
+ * Get the input handle for a gamepad at index
+ * Puts the input handle into input_handle
+ * Returns MistResult
+ */
+MistResult mist_steam_input_get_current_action_set(MistInputHandle input_handle,
+                                                   MistInputActionSetHandle *input_action_set_handle);
+
+/**
+ * Get digital action handle from name
+ * The action handke is put in input_digital_action_handle
+ * Returns MistResult
+ */
+MistResult mist_steam_input_get_digital_action_handle(const char *action_name,
+                                                      MistInputDigitalActionHandle *input_digital_action_handle);
+
+/**
+ * Get all the origins for a digital action
+ * Puts the origins in the origins_out parameter which needs to be a array of length MIST_STEAM_INPUT_MAX_ORIGINS
+ * The count will be put in origins_count
+ * Returns MistResult
+ */
+MistResult mist_steam_input_get_digital_action_origins(MistInputHandle input_handle,
+                                                       MistInputActionSetHandle action_set_handle,
+                                                       MistInputDigitalActionHandle digital_action_handle,
+                                                       MistInputHandle *origins_out,
+                                                       uintptr_t *origins_count);
+
+/**
+ * Get the gamepad index from an input handle.
+ * Puts the gamepad index into index
+ * Returns MistResult
+ */
+MistResult mist_steam_input_get_gamepad_index_for_controller(MistInputHandle input_handle,
+                                                             int *index);
+
+/**
+ * Get the gamepad index from an input handle.
+ * Puts the gamepad index into index
+ * Returns MistResult
+ */
+MistResult mist_steam_input_get_glyph_png_for_action_origin(MistInputActionOrigin origin,
+                                                            enum MistSteamInputGlyphSize size,
+                                                            enum MistSteamInputGlyphStyle flags,
+                                                            const char **path);
+
+/**
+ * Get the gamepad index from an input handle.
+ * Puts the gamepad index into index
+ * Returns MistResult
+ */
+MistResult mist_steam_input_get_glyph_svg_for_action_origin(MistInputActionOrigin origin,
+                                                            enum MistSteamInputGlyphStyle flags,
+                                                            const char **path);
+
+/**
+ * Get input type for controller
+ * Returns MistResult
+ */
+MistResult mist_steam_input_get_input_type_for_handle(MistInputHandle input_handle,
+                                                      enum MistSteamInputType *input_type);
+
+/**
+ * Get the string from origin
+ * Returns MistResult
+ */
+MistResult mist_steam_input_get_string_for_action_origin(MistInputActionOrigin origin,
+                                                         const char **string);
+
+/**
+ * Inits steam input
+ * Returns MistResult
+ */
+MistResult mist_steam_input_init(void);
+
+/**
+ * Sets the led color of a controller
+ * Returns MistResult
+ */
+MistResult mist_steam_input_set_led_color(MistInputHandle input_handle,
+                                          uint8_t color_r,
+                                          uint8_t color_g,
+                                          uint8_t color_b,
+                                          enum MistSteamControllerLEDFlag flags);
+
+/**
+ * Shows the steam input binding menu for a controller
+ * Returns MistResult
+ */
+MistResult mist_steam_input_show_binding_panel(MistInputHandle input_handle, bool *overlay_shown);
+
+/**
+ * Shuts down steam input
+ * Returns MistResult
+ */
+MistResult mist_steam_input_shutdown(void);
+
+/**
+ * Stops the virtual analog momentum
+ * Returns MistResult
+ */
+MistResult mist_steam_input_stop_analog_action_momentum(MistInputHandle input_handle,
+                                                        MistInputAnalogActionHandle action);
+
+/**
+ * Trigger vibration
+ * Returns MistResult
+ */
+MistResult mist_steam_input_trigger_vibration(MistInputHandle input_handle,
+                                              unsigned short left_speed,
+                                              unsigned short right_speed);
+
+/**
+ * Trigger vibration extended
+ * Returns MistResult
+ */
+MistResult mist_steam_input_trigger_vibration_extended(MistInputHandle input_handle,
+                                                       unsigned short left_speed,
+                                                       unsigned short right_speed,
+                                                       unsigned short left_trigger_speed,
+                                                       unsigned short right_trigger_speed);
+
+/**
+ * Trigger haptic event
+ * Returns MistResult
+ */
+MistResult mist_steam_input_trigger_simple_haptic_event(MistInputHandle input_handle,
+                                                        enum MistControllerHapticLocation haptic_location,
+                                                        uint8_t intensity,
+                                                        char gain_db,
+                                                        uint8_t other_intensity,
+                                                        char other_gain_db);
+
+/**
+ * Translate origin to other input type origin
+ * Returns MistResult
+ */
+MistResult mist_steam_input_translate_action_origin(enum MistSteamInputType destination_input_type,
+                                                    MistInputActionOrigin source_origin,
+                                                    MistInputActionOrigin *translated_origin);
 
 /**
  * Begins a file write batch, use file write batches when saving files that gets stored in Steam Cloud.

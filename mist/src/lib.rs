@@ -110,6 +110,8 @@ pub extern "C" fn mist_next_callback(
 mod apps;
 #[path = "../lib/friends.rs"]
 mod friends;
+#[path = "../lib/input.rs"]
+mod input;
 #[path = "../lib/remote_storage.rs"]
 mod remote_storage;
 #[path = "../lib/utils.rs"]
