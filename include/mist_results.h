@@ -3,6 +3,7 @@ enum {
 	MistResult_Mist = 1,
 	MistResult_SteamApps = 100,
 	MistResult_SteamFriends = 105,
+	MistResult_SteamInput = 111,
 	MistResult_SteamRemoteStorage = 123,
 	MistResult_SteamUtils = 128
 };
@@ -26,6 +27,11 @@ enum {
 
 enum {
 	SteamFriendsError_InvalidRichPresence = 0
+};
+
+enum {
+	SteamInputError_NotInitialized = 0,
+	SteamInputError_ShmemError
 };
 
 enum {

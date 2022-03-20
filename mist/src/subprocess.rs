@@ -16,6 +16,7 @@ pub fn run() -> Result<()> {
         steam_user: unsafe { steamworks_sys::SteamAPI_GetHSteamUser() },
         steam_utils: unsafe { steamworks_sys::SteamAPI_SteamUtils_v010() },
         entered_gamepad_text: None,
+        steam_input_data: None,
         should_exit: false,
     };
 
@@ -30,9 +31,16 @@ pub fn run() -> Result<()> {
         std::process::exit(1);
     }
 
+    let poll_duration = Duration::from_millis(1000 / 120); // 120 Hz
+
     while !server.service().should_exit {
-        // Poll for messages from the library until 50ms timeout is reached
-        server.recv_timeout(Duration::from_millis(50));
+        let steam_input = server.service().steam_input;
+        if let Some(input_data) = &mut server.service().steam_input_data {
+            input_data.run_frame(steam_input);
+        }
+
+        // Poll for messages from the library
+        server.recv_timeout(poll_duration);
 
         let steam_pipe = server.service().steam_pipe;
         let steam_user = server.service().steam_user;
@@ -79,6 +87,7 @@ pub struct MistServerService {
     steam_user: steamworks_sys::HSteamUser,
     steam_utils: *mut steamworks_sys::ISteamUtils,
     pub entered_gamepad_text: Option<String>,
+    pub steam_input_data: Option<input::SteamInputData>,
     should_exit: bool,
 }
 

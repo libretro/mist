@@ -27,8 +27,10 @@ mist_errors! {
     SteamFriends: 105 {
         InvalidRichPresence = 0
     },
-    /*SteamInput: 111 {
-    },*/
+    SteamInput: 111 {
+        NotInitialized = 0,
+        ShmemError
+    },
     SteamRemoteStorage: 123 {
         FileWriteBatchAlreadyInProgress = 0,
         FileWriteBatchNotInProgress

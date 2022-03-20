@@ -6,6 +6,7 @@ use std::{
 };
 
 use crate::{
+    input::MistSteamInputClient,
     result::{Error, MistError},
     service::{MistClient, MistServiceToLibrary},
     types::*,
@@ -51,6 +52,7 @@ pub struct SubprocessState {
     >,
     pub glpyh_svg: HashMap<(MistInputActionOrigin, MistSteamInputGlyphStyle), CString>,
     pub origin_strings: HashMap<MistInputActionOrigin, CString>,
+    pub input_client: Option<MistSteamInputClient>,
     pub has_processed_callback: bool,
 }
 

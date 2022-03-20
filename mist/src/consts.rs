@@ -8,3 +8,4 @@ pub const MIST_STEAM_INPUT_MAX_ORIGINS: usize = 8;
 pub const MIST_STEAM_INPUT_MAX_ACTIVE_LAYERS: usize = 16;
 
 pub const MIST_STEAM_INPUT_HANDLE_ALL_CONTROLLERS: u64 = u64::max_value();
+pub const MIST_MAX_GAMEPADS: usize = 16;

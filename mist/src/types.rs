@@ -1,4 +1,7 @@
 use serde_derive::{Deserialize, Serialize};
+use std::os::raw::c_float;
+
+use crate::consts::*;
 
 pub type AppId = u32;
 pub type BuildId = i32;
@@ -306,6 +309,12 @@ pub enum MistControllerSourceMode {
     Switches = 16,
 }
 
+impl Default for MistControllerSourceMode {
+    fn default() -> MistControllerSourceMode {
+        MistControllerSourceMode::None
+    }
+}
+
 #[derive(Copy, Clone, Serialize, Deserialize, Eq, PartialEq, Hash)]
 #[repr(C)]
 pub enum MistSteamControllerLEDFlag {
@@ -394,4 +403,68 @@ pub enum MistFloatingGamepadTextInputMode {
     MultipleLines = 1,
     Email = 2,
     Numeric = 3,
+}
+
+#[derive(Default, Clone, Copy, Serialize, Deserialize)]
+#[repr(C)]
+pub struct MistInputAnalogActionData {
+    pub mode: MistControllerSourceMode,
+    pub x: c_float,
+    pub y: c_float,
+    pub active: bool,
+}
+
+#[derive(Default, Clone, Copy, Serialize, Deserialize, Eq, PartialEq)]
+#[repr(C)]
+pub struct MistInputDigitalActionData {
+    pub state: bool,
+    pub active: bool,
+}
+
+#[derive(Default, Clone, Copy, Serialize, Deserialize)]
+#[repr(C)]
+pub struct MistInputMotionData {
+    pub rot_quat_x: c_float,
+    pub rot_quat_y: c_float,
+    pub rot_quat_z: c_float,
+    pub rot_quat_w: c_float,
+    pub pos_accel_x: c_float,
+    pub pos_accel_y: c_float,
+    pub pos_accel_z: c_float,
+    pub rot_vel_x: c_float,
+    pub rot_vel_y: c_float,
+    pub rot_vel_z: c_float,
+}
+
+#[derive(Clone, Copy)]
+pub struct MistInputStateGamepad {
+    pub input_type: MistSteamInputType,
+    pub input_handle: MistInputHandle,
+    pub analog_action_data: [MistInputAnalogActionData; MIST_STEAM_INPUT_MAX_ANALOG_ACTIONS + 1],
+    pub digital_action_data: [MistInputDigitalActionData; MIST_STEAM_INPUT_MAX_DIGITAL_ACTIONS + 1],
+    pub motion_data: MistInputMotionData,
+}
+
+impl Default for MistInputStateGamepad {
+    fn default() -> MistInputStateGamepad {
+        MistInputStateGamepad {
+            input_type: MistSteamInputType::Unknown,
+            input_handle: 0,
+            analog_action_data: Default::default(),
+            digital_action_data: [MistInputDigitalActionData::default();
+                MIST_STEAM_INPUT_MAX_DIGITAL_ACTIONS + 1],
+            motion_data: MistInputMotionData::default(),
+        }
+    }
+}
+
+#[derive(Default, Clone, Copy)]
+pub struct MistInputState {
+    pub gamepads: [MistInputStateGamepad; MIST_MAX_GAMEPADS],
+}
+
+impl MistInputState {
+    pub fn shmem_size() -> usize {
+        std::mem::size_of::<MistInputState>() + 128 // Add some extra room for the mutex in front
+    }
 }

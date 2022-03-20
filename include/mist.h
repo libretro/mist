@@ -25,11 +25,33 @@
 
 #define MIST_STEAM_INPUT_MAX_ACTIVE_LAYERS 16
 
+#define MIST_MAX_GAMEPADS 16
+
 typedef enum MistControllerHapticLocation {
   MistControllerHapticLocation_Left = 1,
   MistControllerHapticLocation_Right = 2,
   MistControllerHapticLocation_Both = (1 | 2),
 } MistControllerHapticLocation;
+
+typedef enum MistControllerSourceMode {
+  MistControllerSourceMode_None = 0,
+  MistControllerSourceMode_Dpad = 1,
+  MistControllerSourceMode_Buttons = 2,
+  MistControllerSourceMode_FourButtons = 3,
+  MistControllerSourceMode_AbsoluteMouse = 4,
+  MistControllerSourceMode_RelativeMouse = 5,
+  MistControllerSourceMode_JoystickMove = 6,
+  MistControllerSourceMode_JoystickMouse = 7,
+  MistControllerSourceMode_JoystickCamera = 8,
+  MistControllerSourceMode_ScrollWheel = 9,
+  MistControllerSourceMode_Trigger = 10,
+  MistControllerSourceMode_TouchMenu = 11,
+  MistControllerSourceMode_MouseJoystick = 12,
+  MistControllerSourceMode_MouseRegion = 13,
+  MistControllerSourceMode_RadialMenu = 14,
+  MistControllerSourceMode_SingleButton = 15,
+  MistControllerSourceMode_Switches = 16,
+} MistControllerSourceMode;
 
 typedef enum MistFloatingGamepadTextInputMode {
   MistFloatingGamepadTextInputMode_SingleLine = 0,
@@ -350,9 +372,34 @@ typedef uint64_t MistInputHandle;
 
 typedef uint64_t MistInputActionSetHandle;
 
+typedef struct MistInputAnalogActionData {
+  enum MistControllerSourceMode mode;
+  float x;
+  float y;
+  bool active;
+} MistInputAnalogActionData;
+
 typedef uint64_t MistInputAnalogActionHandle;
 
+typedef struct MistInputDigitalActionData {
+  bool state;
+  bool active;
+} MistInputDigitalActionData;
+
 typedef uint64_t MistInputDigitalActionHandle;
+
+typedef struct MistInputMotionData {
+  float rot_quat_x;
+  float rot_quat_y;
+  float rot_quat_z;
+  float rot_quat_w;
+  float pos_accel_x;
+  float pos_accel_y;
+  float pos_accel_z;
+  float rot_vel_x;
+  float rot_vel_y;
+  float rot_vel_z;
+} MistInputMotionData;
 
 /**
  * Init mist, this is throwns an error if it was already initialised
@@ -603,6 +650,14 @@ MistResult mist_steam_input_get_action_set_handle(const char *action_set_name,
                                                   MistInputActionSetHandle *action_set_handle);
 
 /**
+ * Get the analog action data for a analog action
+ * NOTE: This method is NOT thread safe, only call it from the thread used for input init!
+ * Returns MistInputAnalogActionData
+ */
+struct MistInputAnalogActionData mist_steam_input_get_analog_action_data(MistInputHandle input_handle,
+                                                                         MistInputAnalogActionHandle analog_action_handle);
+
+/**
  * Get the analog action handle from name
  * The action handle is put in analog_action_handle
  * Returns MistResult
@@ -646,6 +701,14 @@ MistResult mist_steam_input_get_controller_for_gamepad_index(int index,
  */
 MistResult mist_steam_input_get_current_action_set(MistInputHandle input_handle,
                                                    MistInputActionSetHandle *input_action_set_handle);
+
+/**
+ * Get the digital action data for a digital action
+ * NOTE: This method is NOT thread safe, only call it from the thread used for input init!
+ * Returns MistInputDigitalActionData
+ */
+struct MistInputDigitalActionData mist_steam_input_get_digital_action_data(MistInputHandle input_handle,
+                                                                           MistInputDigitalActionHandle digital_action_handle);
 
 /**
  * Get digital action handle from name
@@ -702,6 +765,13 @@ MistResult mist_steam_input_get_input_type_for_handle(MistInputHandle input_hand
                                                       enum MistSteamInputType *input_type);
 
 /**
+ * Get the motion data for a gamepad
+ * NOTE: This method is NOT thread safe, only call it from the thread used for input init!
+ * Returns MistInputMotionData
+ */
+struct MistInputMotionData mist_steam_input_get_motion_data(MistInputHandle input_handle);
+
+/**
  * Get the string from origin
  * Returns MistResult
  */
@@ -712,7 +782,20 @@ MistResult mist_steam_input_get_string_for_action_origin(MistInputActionOrigin o
  * Inits steam input
  * Returns MistResult
  */
-MistResult mist_steam_input_init(void);
+MistResult mist_steam_input_init(bool *initialized);
+
+/**
+ * Runs the frame
+ * NOTE: This method is NOT thread safe, only call it from the thread used for input init!
+ * Returns MistResult
+ */
+MistResult mist_steam_input_run_frame(void);
+
+/**
+ * Manually sets the input action manifest
+ * Returns MistResult
+ */
+MistResult mist_steam_input_set_input_action_manifest_file_path(const char *path, bool *set);
 
 /**
  * Sets the led color of a controller
@@ -734,7 +817,7 @@ MistResult mist_steam_input_show_binding_panel(MistInputHandle input_handle, boo
  * Shuts down steam input
  * Returns MistResult
  */
-MistResult mist_steam_input_shutdown(void);
+MistResult mist_steam_input_shutdown(bool *shutdown);
 
 /**
  * Stops the virtual analog momentum
@@ -779,6 +862,12 @@ MistResult mist_steam_input_trigger_simple_haptic_event(MistInputHandle input_ha
 MistResult mist_steam_input_translate_action_origin(enum MistSteamInputType destination_input_type,
                                                     MistInputActionOrigin source_origin,
                                                     MistInputActionOrigin *translated_origin);
+
+/**
+ * Checks if gamepad at index is not unknown
+ * Returns bool
+ */
+bool mist_steam_input_ex_query_gamepad(int index);
 
 /**
  * Begins a file write batch, use file write batches when saving files that gets stored in Steam Cloud.

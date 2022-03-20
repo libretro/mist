@@ -28,8 +28,16 @@ macro_rules! mist_service {
     (__fallback_ty_ret, $call_name:ident, $res:ident) => {
         MistServiceToLibraryResult::$call_name
     };
+    (__timeout $time:expr) => {
+        $time
+    };
+    (__timeout) => {
+        DEFAULT_TIMEOUT
+    };
     ($($module:ident {
-        $(fn $call_name:ident($($arg:ident : $arg_ty:ty),*)$(-> $return_ty:ty)?;)*
+        $(  $(#[timeout($timeout_time:expr)])?
+            fn $call_name:ident($($arg:ident : $arg_ty:ty),*)$(-> $return_ty:ty)?;
+        )*
     })*) => {
         paste::paste! {
             use anyhow::Result;
@@ -152,7 +160,7 @@ macro_rules! mist_service {
                                     return Err(Error::Mist(MistError::SubprocessLost));
                                 }
 
-                                while let Ok(data) = self.receiver.recv_timeout(std::time::Duration::from_millis(100)) {
+                                while let Ok(data) = self.receiver.recv_timeout(std::time::Duration::from_millis(mist_service!(__timeout $($timeout_time)*))) {
                                     match data {
                                         MistServiceToLibrary::Initialized => unreachable!(),
                                         MistServiceToLibrary::InitError(_) => unreachable!(),

@@ -1,10 +1,168 @@
+use raw_sync::locks::*;
+use shared_memory::{Shmem, ShmemConf};
 use std::{
     ffi::{CStr, CString},
     os::raw::{c_char, c_int, c_ushort},
+    sync::atomic::{AtomicU8, Ordering},
 };
 
 use super::MistServerService;
-use crate::{result::Error, service::MistServiceSteamInput, types::*};
+use crate::{
+    consts::*,
+    result::{Error, SteamInputError},
+    service::MistServiceSteamInput,
+    types::*,
+};
+
+pub struct SteamInputData {
+    shmem: Shmem,
+    state: MistInputState,
+    last_counter: u8,
+    analog_actions: Vec<MistInputAnalogActionHandle>,
+    digital_actions: Vec<MistInputDigitalActionHandle>,
+}
+
+impl SteamInputData {
+    pub fn new() -> Result<Self, Error> {
+        let shmem = match ShmemConf::new().size(MistInputState::shmem_size()).create() {
+            Ok(shmem) => shmem,
+            Err(err) => {
+                eprintln!("[mist] Error setting up shmem: {}", err);
+                return Err(Error::SteamInput(SteamInputError::ShmemError));
+            }
+        };
+
+        let raw_ptr = shmem.as_ptr();
+        let counter_ptr: *mut AtomicU8 =
+            unsafe { raw_ptr.add(Mutex::size_of(Some(raw_ptr))) } as *mut AtomicU8;
+        let state_ptr =
+            unsafe { raw_ptr.add(Mutex::size_of(Some(raw_ptr)) + std::mem::size_of::<AtomicU8>()) };
+
+        let (lock, _bytes_used) = unsafe { Mutex::new(raw_ptr, state_ptr).unwrap() };
+        let state_ptr = state_ptr as *mut MistInputState;
+        unsafe { *state_ptr = MistInputState::default() };
+        unsafe { *counter_ptr = AtomicU8::new(0) };
+        drop(lock);
+
+        Ok(SteamInputData {
+            shmem,
+            state: MistInputState::default(),
+            last_counter: 0,
+            analog_actions: Vec::new(),
+            digital_actions: Vec::new(),
+        })
+    }
+
+    pub fn os_id(&self) -> String {
+        self.shmem.get_os_id().to_owned()
+    }
+
+    fn get_counter(&self) -> u8 {
+        let raw_ptr = self.shmem.as_ptr();
+        let counter_ptr: *mut AtomicU8 =
+            unsafe { raw_ptr.add(Mutex::size_of(Some(raw_ptr))) } as *mut AtomicU8;
+        unsafe { &*counter_ptr }.load(Ordering::Relaxed)
+    }
+
+    pub fn run_frame(&mut self, steam_input: *mut steamworks_sys::ISteamInput) {
+        // Do not poll input until the library has processed the last one so we do not drop input
+        if self.last_counter == self.get_counter() {
+            return;
+        }
+
+        unsafe { steamworks_sys::SteamAPI_ISteamInput_RunFrame(steam_input, true) };
+
+        for i in 0..MIST_MAX_GAMEPADS {
+            let pad = &mut self.state.gamepads[i];
+
+            let input_handle = unsafe {
+                steamworks_sys::SteamAPI_ISteamInput_GetControllerForGamepadIndex(
+                    steam_input,
+                    i as _,
+                )
+            };
+
+            let input_type = unsafe {
+                std::mem::transmute::<_, MistSteamInputType>(
+                    steamworks_sys::SteamAPI_ISteamInput_GetInputTypeForHandle(
+                        steam_input,
+                        input_handle,
+                    ),
+                )
+            };
+
+            pad.input_handle = input_handle;
+            pad.input_type = input_type;
+
+            // Only update actions if the controller is valid
+            if pad.input_type != MistSteamInputType::Unknown {
+                for analog_handle in &self.analog_actions {
+                    let idx = *analog_handle as usize;
+                    let analog_action_data = unsafe {
+                        steamworks_sys::SteamAPI_ISteamInput_GetAnalogActionData(
+                            steam_input,
+                            input_handle,
+                            *analog_handle,
+                        )
+                    };
+
+                    pad.analog_action_data[idx] = MistInputAnalogActionData {
+                        mode: unsafe {
+                            std::mem::transmute::<_, MistControllerSourceMode>(
+                                analog_action_data.eMode,
+                            )
+                        },
+                        x: analog_action_data.x,
+                        y: analog_action_data.y,
+                        active: analog_action_data.bActive,
+                    };
+                }
+
+                for digital_handle in &self.digital_actions {
+                    let idx = *digital_handle as usize;
+                    let digital_action_data = unsafe {
+                        steamworks_sys::SteamAPI_ISteamInput_GetDigitalActionData(
+                            steam_input,
+                            input_handle,
+                            *digital_handle,
+                        )
+                    };
+
+                    pad.digital_action_data[idx] = MistInputDigitalActionData {
+                        state: digital_action_data.bState,
+                        active: digital_action_data.bActive,
+                    };
+                }
+
+                let motion_data = unsafe {
+                    steamworks_sys::SteamAPI_ISteamInput_GetMotionData(steam_input, input_handle)
+                };
+
+                pad.motion_data =
+                    unsafe { std::mem::transmute::<_, MistInputMotionData>(motion_data) };
+            }
+        }
+
+        // Update the state in the shared memory
+        let raw_ptr = self.shmem.as_ptr();
+        let counter_ptr: *mut AtomicU8 =
+            unsafe { raw_ptr.add(Mutex::size_of(Some(raw_ptr))) } as *mut AtomicU8;
+        let state_ptr =
+            unsafe { raw_ptr.add(Mutex::size_of(Some(raw_ptr)) + std::mem::size_of::<AtomicU8>()) };
+
+        let (lock, _bytes_used) = unsafe { Mutex::from_existing(raw_ptr, state_ptr).unwrap() };
+
+        let state_ptr = state_ptr as *mut MistInputState;
+
+        lock.lock().unwrap();
+
+        // Copy the state
+        unsafe { *state_ptr = self.state };
+        self.last_counter = unsafe { &*counter_ptr }.load(Ordering::Relaxed);
+
+        lock.release().unwrap();
+    }
+}
 
 // ISteamInput
 impl MistServiceSteamInput for MistServerService {
@@ -20,6 +178,7 @@ impl MistServiceSteamInput for MistServerService {
                 action_set_handle,
             )
         }
+
         Ok(())
     }
     fn activate_action_set_layer(
@@ -92,19 +251,26 @@ impl MistServiceSteamInput for MistServerService {
             )
         })
     }
-    // TODO: fn get_analog_action_data(input_handle: MistInputHandle, analog_action_handle: MistInputAnalogActionHandle) -> AnalogActionData;
     fn get_analog_action_handle(
         &mut self,
         name: String,
     ) -> Result<MistInputAnalogActionHandle, Error> {
         let name_cstr = CString::new(name).unwrap_or_default();
 
-        Ok(unsafe {
+        let handle = unsafe {
             steamworks_sys::SteamAPI_ISteamInput_GetAnalogActionHandle(
                 self.steam_input,
                 name_cstr.as_ptr() as *const _,
             )
-        })
+        };
+
+        if let Some(input_data) = &mut self.steam_input_data {
+            if !input_data.analog_actions.contains(&handle) {
+                input_data.analog_actions.push(handle);
+            }
+        }
+
+        Ok(handle)
     }
     fn get_analog_action_origins(
         &mut self,
@@ -162,19 +328,26 @@ impl MistServiceSteamInput for MistServerService {
             steamworks_sys::SteamAPI_ISteamInput_GetCurrentActionSet(self.steam_input, input_handle)
         })
     }
-    // TODO: fn get_digital_action_data(input_handle: MistInputHandle, digital_action_handle: InputDigitalActionHandle) -> (&mut self, ) {}
     fn get_digital_action_handle(
         &mut self,
         name: String,
     ) -> Result<MistInputDigitalActionHandle, Error> {
         let name_cstr = CString::new(name).unwrap_or_default();
 
-        Ok(unsafe {
+        let handle = unsafe {
             steamworks_sys::SteamAPI_ISteamInput_GetDigitalActionHandle(
                 self.steam_input,
                 name_cstr.as_ptr() as *const _,
             )
-        })
+        };
+
+        if let Some(input_data) = &mut self.steam_input_data {
+            if !input_data.digital_actions.contains(&handle) {
+                input_data.digital_actions.push(handle);
+            }
+        }
+
+        Ok(handle)
     }
     fn get_digital_action_origins(
         &mut self,
@@ -265,7 +438,6 @@ impl MistServiceSteamInput for MistServerService {
             )
         })
     }
-    // TODO: fn get_motion_data(&mut self, input_handle: MistInputHandle) -> InputMotionData;
     fn get_string_for_action_origin(
         &mut self,
         origin: MistInputActionOrigin,
@@ -283,14 +455,26 @@ impl MistServiceSteamInput for MistServerService {
 
         Ok(action_origin_string)
     }
-    fn init(&mut self) -> Result<(), Error> {
-        unsafe {
-            steamworks_sys::SteamAPI_ISteamInput_Init(self.steam_input, true);
+    fn init(&mut self) -> Result<(String, bool), Error> {
+        let input_data = SteamInputData::new()?;
+        let os_id = input_data.os_id();
+
+        let succ = unsafe { steamworks_sys::SteamAPI_ISteamInput_Init(self.steam_input, true) };
+
+        if succ {
+            self.steam_input_data = Some(input_data);
         }
 
-        Ok(())
+        Ok((os_id, succ))
     }
-    // fn run_frame(&mut self, ) {} - Skipped and implemented on a higher level
+    fn set_input_action_manifest_file_path(&mut self, path: CString) -> Result<bool, Error> {
+        Ok(unsafe {
+            steamworks_sys::SteamAPI_ISteamInput_SetInputActionManifestFilePath(
+                self.steam_input,
+                path.as_ptr(),
+            )
+        })
+    }
     fn set_led_color(
         &mut self,
         input_handle: MistInputHandle,
@@ -319,12 +503,8 @@ impl MistServiceSteamInput for MistServerService {
         })
     }
     // fn show_digital_action_origins... Deprecated so not implemented
-    fn shutdown(&mut self) -> Result<(), Error> {
-        unsafe {
-            steamworks_sys::SteamAPI_ISteamInput_Shutdown(self.steam_input);
-        }
-
-        Ok(())
+    fn shutdown(&mut self) -> Result<bool, Error> {
+        Ok(unsafe { steamworks_sys::SteamAPI_ISteamInput_Shutdown(self.steam_input) })
     }
     fn stop_analog_action_momentum(
         &mut self,

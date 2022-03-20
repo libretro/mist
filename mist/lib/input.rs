@@ -1,13 +1,71 @@
+use raw_sync::locks::*;
+use shared_memory::{Shmem, ShmemConf};
 use std::{
     ffi::CStr,
     os::raw::{c_char, c_int, c_ushort},
+    sync::atomic::{AtomicU8, Ordering},
 };
 
 use crate::{
     consts::*,
-    result::{MistResult, Success},
+    lib_subprocess::MistSubprocess,
+    result::{Error, MistResult, SteamInputError, Success},
     types::*,
 };
+
+static mut MIST_INPUT_STATE: *mut MistInputState = std::ptr::null_mut();
+
+pub struct MistSteamInputClient {
+    shmem: Shmem,
+}
+
+impl MistSteamInputClient {
+    fn setup(subprocess: &mut MistSubprocess, os_id: String) -> MistResult {
+        let shmem = match ShmemConf::new()
+            .os_id(&os_id)
+            .size(MistInputState::shmem_size())
+            .open()
+        {
+            Ok(shmem) => shmem,
+            Err(_err) => {
+                return Error::SteamInput(SteamInputError::ShmemError).into();
+            }
+        };
+
+        unsafe { MIST_INPUT_STATE = Box::leak(Box::new(MistInputState::default())) as *mut _ };
+
+        subprocess.state_mut().input_client = Some(MistSteamInputClient { shmem });
+
+        Success
+    }
+
+    fn run_frame(&mut self) -> MistResult {
+        let raw_ptr = self.shmem.as_ptr();
+        let counter_ptr: *mut AtomicU8 =
+            unsafe { raw_ptr.add(Mutex::size_of(Some(raw_ptr))) } as *mut AtomicU8;
+        let state_ptr =
+            unsafe { raw_ptr.add(Mutex::size_of(Some(raw_ptr)) + std::mem::size_of::<AtomicU8>()) };
+
+        let (lock, _bytes_used) = unsafe { Mutex::from_existing(raw_ptr, state_ptr).unwrap() };
+
+        let state_ptr = state_ptr as *mut MistInputState;
+
+        lock.lock().unwrap();
+
+        // Copy the state
+        unsafe { *MIST_INPUT_STATE = *state_ptr };
+
+        lock.release().unwrap();
+
+        // Add 1 to the counter
+        unsafe { &mut *counter_ptr }.fetch_add(1, Ordering::Relaxed);
+
+        Success
+    }
+}
+
+// The raw pointer inside shmem *should* be safe
+unsafe impl Send for MistSteamInputClient {}
 
 /// Makes the input controller use the action set
 /// Returns MistResult
@@ -133,7 +191,25 @@ pub extern "C" fn mist_steam_input_get_action_set_handle(
     Success
 }
 
-// TODO: fn mist_steam_input_get_analog_action_data(input_handle: MistInputHandle, analog_action_handle: MistInputAnalogActionHandle) -> ();
+/// Get the analog action data for a analog action
+/// NOTE: This method is NOT thread safe, only call it from the thread used for input init!
+/// Returns MistInputAnalogActionData
+#[no_mangle]
+pub extern "C" fn mist_steam_input_get_analog_action_data(
+    input_handle: MistInputHandle,
+    analog_action_handle: MistInputAnalogActionHandle,
+) -> MistInputAnalogActionData {
+    let input_state = unsafe { &*MIST_INPUT_STATE };
+
+    for i in 0..MIST_MAX_GAMEPADS {
+        let pad = &input_state.gamepads[i];
+        if pad.input_handle == input_handle {
+            return pad.analog_action_data[analog_action_handle as usize];
+        }
+    }
+
+    MistInputAnalogActionData::default()
+}
 
 /// Get the analog action handle from name
 /// The action handle is put in analog_action_handle
@@ -161,7 +237,6 @@ pub extern "C" fn mist_steam_input_get_analog_action_handle(
     Success
 }
 
-// TODO: fn mist_steam_input_get_analog_action_origins(input_handle: MistInputHandle, action_set_handle: MistInputActionSetHandle, analog_action_handle: MistInputAnalogActionHandle) -> AnalogOrigins;
 /// Get all the origins for a digital action
 /// Puts the origins in the origins_out parameter which needs to be a array of length MIST_STEAM_INPUT_MAX_ORIGINS
 /// The count will be put in origins_count
@@ -265,7 +340,25 @@ pub extern "C" fn mist_steam_input_get_current_action_set(
     Success
 }
 
-// TODO: fn mist_steam_input_get_digital_action_data(input_handle: MistInputHandle, digital_action_handle: MistInputDigitalActionHandle) -> ();
+/// Get the digital action data for a digital action
+/// NOTE: This method is NOT thread safe, only call it from the thread used for input init!
+/// Returns MistInputDigitalActionData
+#[no_mangle]
+pub extern "C" fn mist_steam_input_get_digital_action_data(
+    input_handle: MistInputHandle,
+    digital_action_handle: MistInputDigitalActionHandle,
+) -> MistInputDigitalActionData {
+    let input_state = unsafe { &*MIST_INPUT_STATE };
+
+    for i in 0..MIST_MAX_GAMEPADS {
+        let pad = &input_state.gamepads[i];
+        if pad.input_handle == input_handle {
+            return pad.digital_action_data[digital_action_handle as usize];
+        }
+    }
+
+    MistInputDigitalActionData::default()
+}
 
 /// Get digital action handle from name
 /// The action handke is put in input_digital_action_handle
@@ -420,7 +513,24 @@ pub extern "C" fn mist_steam_input_get_input_type_for_handle(
     Success
 }
 
-// TODO: fn mist_steam_input_get_motion_data(input_handle: MistInputHandle) -> InputMotionData;
+/// Get the motion data for a gamepad
+/// NOTE: This method is NOT thread safe, only call it from the thread used for input init!
+/// Returns MistInputMotionData
+#[no_mangle]
+pub extern "C" fn mist_steam_input_get_motion_data(
+    input_handle: MistInputHandle,
+) -> MistInputMotionData {
+    let input_state = unsafe { &*MIST_INPUT_STATE };
+
+    for i in 0..MIST_MAX_GAMEPADS {
+        let pad = &input_state.gamepads[i];
+        if pad.input_handle == input_handle {
+            return pad.motion_data;
+        }
+    }
+
+    MistInputMotionData::default()
+}
 
 /// Get the string from origin
 /// Returns MistResult
@@ -450,10 +560,51 @@ pub extern "C" fn mist_steam_input_get_string_for_action_origin(
 /// Inits steam input
 /// Returns MistResult
 #[no_mangle]
-pub extern "C" fn mist_steam_input_init() -> MistResult {
+pub extern "C" fn mist_steam_input_init(initialized: *mut bool) -> MistResult {
     let mut subprocess = get_subprocess!();
 
-    unwrap_client_result!(subprocess.client().steam_input().init());
+    let (os_id, inited) = unwrap_client_result!(subprocess.client().steam_input().init());
+
+    let res = MistSteamInputClient::setup(&mut *subprocess, os_id);
+
+    unsafe { *initialized = inited };
+
+    res
+}
+
+/// Runs the frame
+/// NOTE: This method is NOT thread safe, only call it from the thread used for input init!
+/// Returns MistResult
+#[no_mangle]
+pub extern "C" fn mist_steam_input_run_frame() -> MistResult {
+    let mut subprocess = get_subprocess!();
+
+    if let Some(input_client) = &mut subprocess.state_mut().input_client {
+        input_client.run_frame()
+    } else {
+        Error::SteamInput(SteamInputError::NotInitialized).into()
+    }
+}
+
+/// Manually sets the input action manifest
+/// Returns MistResult
+#[no_mangle]
+pub extern "C" fn mist_steam_input_set_input_action_manifest_file_path(
+    path: *const c_char,
+    set: *mut bool,
+) -> MistResult {
+    let mut subprocess = get_subprocess!();
+
+    let path = unsafe { CStr::from_ptr(path) }.to_owned();
+
+    let has_set = unwrap_client_result!(subprocess
+        .client()
+        .steam_input()
+        .set_input_action_manifest_file_path(path));
+
+    unsafe {
+        *set = has_set;
+    }
 
     Success
 }
@@ -503,10 +654,12 @@ pub extern "C" fn mist_steam_input_show_binding_panel(
 /// Shuts down steam input
 /// Returns MistResult
 #[no_mangle]
-pub extern "C" fn mist_steam_input_shutdown() -> MistResult {
+pub extern "C" fn mist_steam_input_shutdown(shutdown: *mut bool) -> MistResult {
     let mut subprocess = get_subprocess!();
 
-    unwrap_client_result!(subprocess.client().steam_input().shutdown());
+    let res = unwrap_client_result!(subprocess.client().steam_input().shutdown());
+
+    unsafe { *shutdown = res };
 
     Success
 }
@@ -619,4 +772,15 @@ pub extern "C" fn mist_steam_input_translate_action_origin(
     unsafe { *translated_origin = translated };
 
     Success
+}
+
+// Extra methods
+
+/// Checks if gamepad at index is not unknown
+/// Returns bool
+#[no_mangle]
+pub extern "C" fn mist_steam_input_ex_query_gamepad(index: c_int) -> bool {
+    let input_state = unsafe { &*MIST_INPUT_STATE };
+
+    input_state.gamepads[index as usize].input_type != MistSteamInputType::Unknown
 }
