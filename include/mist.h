@@ -346,7 +346,9 @@ typedef enum MistSteamInputType {
   MistSteamInputType_SwitchProController = 10,
   MistSteamInputType_MobileTouch = 11,
   MistSteamInputType_PS3Controller = 12,
-  MistSteamInputType_Count = 13,
+  MistSteamInputType_PS5Controller = 13,
+  MistSteamInputType_SteamDeckController = 14,
+  MistSteamInputType_Count = 15,
   MistSteamInputType_MaximumPossibleValue = 255,
 } MistSteamInputType;
 

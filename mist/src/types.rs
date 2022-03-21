@@ -360,7 +360,9 @@ pub enum MistSteamInputType {
     SwitchProController = 10,
     MobileTouch = 11,
     PS3Controller = 12,
-    Count = 13,
+    PS5Controller = 13,
+    SteamDeckController = 14,
+    Count = 15,
     MaximumPossibleValue = 255,
 }
 
