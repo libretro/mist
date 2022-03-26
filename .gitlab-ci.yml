@@ -2,7 +2,7 @@ stages:
  - build
  - package
 
-image: $CI_SERVER_HOST:5050/libretro-steam/rust-build-image:latest
+image: $CI_SERVER_HOST:5050/libretro-steam/rust-build-image:cross
 
 .build-common:
   stage: build
@@ -16,6 +16,7 @@ image: $CI_SERVER_HOST:5050/libretro-steam/rust-build-image:latest
     - cargo build --release --target=$RUST_TARGET --lib --package mist
 
 build-linux-x64:
+  image: $CI_SERVER_HOST:5050/libretro-steam/rust-build-image:latest
   extends: .build-common
   artifacts:
     paths:
@@ -35,7 +36,6 @@ build-linux-x64:
     - cp ./steamworks/redistributable_bin/linux64/libsteam_api.so ./mist-linux-x64/mist
 
 build-windows-x64:
-  image: $CI_SERVER_HOST:5050/libretro-steam/rust-build-image:cross
   extends: .build-common
   artifacts:
     paths:
