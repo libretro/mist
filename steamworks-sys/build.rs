@@ -57,7 +57,7 @@ fn main() {
             "-I{}",
             Path::new(&sdk_path).join("public").to_string_lossy()
         ))
-        .clang_args(&["-xc++"]);
+        .clang_args(&["-xc++", "-std=c++11"]);
 
     #[cfg(unix)]
     {
