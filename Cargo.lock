@@ -1350,12 +1350,11 @@ dependencies = [
 [[package]]
 name = "raw_sync"
 version = "0.1.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2a34bde3561f980a51c70495164200569a11662644fe5af017f0b5d7015688cc"
+source = "git+https://git.libretro.com/libretro-steam/raw_sync.git#5fc0f236c10dde277106680289b8e7080595e938"
 dependencies = [
- "cfg-if 0.1.10",
+ "cfg-if 1.0.0",
  "libc",
- "nix 0.22.3",
+ "nix 0.23.1",
  "rand",
  "winapi",
 ]
