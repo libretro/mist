@@ -1358,7 +1358,7 @@ dependencies = [
 [[package]]
 name = "raw_sync"
 version = "0.1.5"
-source = "git+https://git.libretro.com/libretro-steam/raw_sync.git#ba3cf6dd3a00a6fafc698cc8a9e1d93a46ddeb9e"
+source = "git+https://git.libretro.com/libretro-steam/raw_sync.git#d140773fc9453c66ce354b4c12096302bcda6c3f"
 dependencies = [
  "cfg-if 1.0.0",
  "libc",

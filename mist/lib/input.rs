@@ -50,12 +50,12 @@ impl MistSteamInputClient {
 
         let state_ptr = state_ptr as *mut MistInputState;
 
-        lock.lock().unwrap();
+        let guard = lock.lock().unwrap();
 
         // Copy the state
         unsafe { *MIST_INPUT_STATE = *state_ptr };
 
-        lock.release().unwrap();
+        drop(guard);
 
         // Add 1 to the counter
         unsafe { &mut *counter_ptr }.fetch_add(1, Ordering::Relaxed);

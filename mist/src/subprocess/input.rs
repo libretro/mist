@@ -38,7 +38,13 @@ impl SteamInputData {
         let state_ptr =
             unsafe { raw_ptr.add(Mutex::size_of(Some(raw_ptr)) + std::mem::size_of::<AtomicU8>()) };
 
-        let (lock, _bytes_used) = unsafe { Mutex::new(raw_ptr, state_ptr).unwrap() };
+        let (lock, _bytes_used) = match unsafe { Mutex::new(raw_ptr, state_ptr) } {
+            Ok(l) => l,
+            Err(err) => {
+                eprintln!("[mist] Error creating shmem mutex: {}", err);
+                return Err(Error::SteamInput(SteamInputError::ShmemError));
+            }
+        };
         let state_ptr = state_ptr as *mut MistInputState;
         unsafe { *state_ptr = MistInputState::default() };
         unsafe { *counter_ptr = AtomicU8::new(0) };
@@ -154,13 +160,13 @@ impl SteamInputData {
 
         let state_ptr = state_ptr as *mut MistInputState;
 
-        lock.lock().unwrap();
+        let guard = lock.lock().unwrap();
 
         // Copy the state
         unsafe { *state_ptr = self.state };
         self.last_counter = unsafe { &*counter_ptr }.load(Ordering::Relaxed);
 
-        lock.release().unwrap();
+        drop(guard);
     }
 }
 
