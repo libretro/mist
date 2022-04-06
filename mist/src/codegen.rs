@@ -181,7 +181,11 @@ macro_rules! mist_service {
                                     }
                                 }
 
-                                mist_log_error!("Timeout calling function");
+                                mist_log_error!(
+                                    &format!("Timeout calling function: {}::{}",
+                                    stringify!($module),
+                                    stringify!($call_name))
+                                );
                                 return Err(Error::Mist(MistError::Timeout));
                             }
                         )*

@@ -68,7 +68,7 @@ mist_service!(
         fn get_input_type_for_handle(input_handle: MistInputHandle) -> MistSteamInputType;
         // fn get_motion_data(input_handle: MistInputHandle) -> (); - Stored in shared memory.
         fn get_string_for_action_origin(origin: MistInputActionOrigin) -> CString;
-        #[timeout(1_000)]
+        #[timeout(10_000)]
         fn init() -> (String, bool);
         #[timeout(10_000)]
         fn set_input_action_manifest_file_path(path: CString) -> bool;
@@ -76,6 +76,7 @@ mist_service!(
         // fn show_analog_action_origins... Deprecated so not implemented
         fn show_binding_panel(input_handle: MistInputHandle) -> bool;
         // fn show_digital_action_origins... Deprecated so not implemented
+        #[timeout(10_000)]
         fn shutdown() -> bool;
         fn stop_analog_action_momentum(input_handle: MistInputHandle, action: MistInputAnalogActionHandle);
         fn trigger_vibration(input_handle: MistInputHandle, left_speed: c_ushort, right_speed: c_ushort);

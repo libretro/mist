@@ -24,7 +24,6 @@ macro_rules! get_subprocess {
             if inner.is_alive() {
                 parking_lot::MutexGuard::map(lock, |inner| inner.as_mut().unwrap())
             } else {
-                crate::mist_log_error("The subprocess has died");
                 return crate::result::Error::Mist(crate::result::MistError::SubprocessLost).into();
             }
         } else {
