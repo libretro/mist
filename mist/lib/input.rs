@@ -16,6 +16,7 @@ use crate::{
 static mut MIST_INPUT_STATE: *mut MistInputState = std::ptr::null_mut();
 
 pub struct MistSteamInputClient {
+    lock: Box<dyn LockImpl>,
     shmem: Shmem,
 }
 
@@ -34,7 +35,13 @@ impl MistSteamInputClient {
 
         unsafe { MIST_INPUT_STATE = Box::leak(Box::new(MistInputState::default())) as *mut _ };
 
-        subprocess.state_mut().input_client = Some(MistSteamInputClient { shmem });
+        let raw_ptr = shmem.as_ptr();
+        let state_ptr =
+            unsafe { raw_ptr.add(Mutex::size_of(Some(raw_ptr)) + std::mem::size_of::<AtomicU8>()) };
+
+        let (lock, _bytes_used) = unsafe { Mutex::from_existing(raw_ptr, state_ptr).unwrap() };
+
+        subprocess.state_mut().input_client = Some(MistSteamInputClient { lock, shmem });
 
         Success
     }
@@ -46,11 +53,9 @@ impl MistSteamInputClient {
         let state_ptr =
             unsafe { raw_ptr.add(Mutex::size_of(Some(raw_ptr)) + std::mem::size_of::<AtomicU8>()) };
 
-        let (lock, _bytes_used) = unsafe { Mutex::from_existing(raw_ptr, state_ptr).unwrap() };
-
         let state_ptr = state_ptr as *mut MistInputState;
 
-        let guard = lock.lock().unwrap();
+        let guard = self.lock.lock().unwrap();
 
         // Copy the state
         unsafe { *MIST_INPUT_STATE = *state_ptr };

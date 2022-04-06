@@ -20,6 +20,7 @@ pub struct SteamInputData {
     last_counter: u8,
     analog_actions: Vec<MistInputAnalogActionHandle>,
     digital_actions: Vec<MistInputDigitalActionHandle>,
+    lock: Box<dyn LockImpl>,
 }
 
 impl SteamInputData {
@@ -48,7 +49,6 @@ impl SteamInputData {
         let state_ptr = state_ptr as *mut MistInputState;
         unsafe { *state_ptr = MistInputState::default() };
         unsafe { *counter_ptr = AtomicU8::new(0) };
-        drop(lock);
 
         Ok(SteamInputData {
             shmem,
@@ -56,6 +56,7 @@ impl SteamInputData {
             last_counter: 0,
             analog_actions: Vec::new(),
             digital_actions: Vec::new(),
+            lock,
         })
     }
 
@@ -156,11 +157,9 @@ impl SteamInputData {
         let state_ptr =
             unsafe { raw_ptr.add(Mutex::size_of(Some(raw_ptr)) + std::mem::size_of::<AtomicU8>()) };
 
-        let (lock, _bytes_used) = unsafe { Mutex::from_existing(raw_ptr, state_ptr).unwrap() };
-
         let state_ptr = state_ptr as *mut MistInputState;
 
-        let guard = lock.lock().unwrap();
+        let guard = self.lock.lock().unwrap();
 
         // Copy the state
         unsafe { *state_ptr = self.state };
