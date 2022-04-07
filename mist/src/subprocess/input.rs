@@ -79,15 +79,39 @@ impl SteamInputData {
 
         unsafe { steamworks_sys::SteamAPI_ISteamInput_RunFrame(steam_input, true) };
 
-        for i in 0..MIST_MAX_GAMEPADS {
-            let pad = &mut self.state.gamepads[i];
+        self.state.input_handle_count = unsafe {
+            steamworks_sys::SteamAPI_ISteamInput_GetConnectedControllers(
+                steam_input,
+                &mut self.state.input_handles as *mut _,
+            )
+        };
 
-            let input_handle = unsafe {
-                steamworks_sys::SteamAPI_ISteamInput_GetControllerForGamepadIndex(
-                    steam_input,
-                    i as _,
-                )
-            };
+        let input_handles = &self.state.input_handles[..self.state.input_handle_count as usize];
+
+        // Remove gamepads no longer connected
+        for handle in self.state.gamepad_mapping.iter_mut() {
+            if *handle != 0 && !input_handles.contains(handle) {
+                *handle = 0;
+            }
+        }
+
+        // Add gamepads not mapped
+        for handle in input_handles {
+            if !self.state.gamepad_mapping.contains(handle) {
+                if let Some(free_pos) = self.state.gamepad_mapping.iter().position(|h| *h == 0) {
+                    self.state.gamepad_mapping[free_pos] = *handle;
+                }
+            }
+        }
+
+        for i in 0..MIST_STEAM_INPUT_MAX_COUNT {
+            let input_handle = self.state.gamepad_mapping[i];
+
+            if input_handle == 0 {
+                continue;
+            }
+
+            let pad = &mut self.state.gamepads[i];
 
             let input_type = unsafe {
                 std::mem::transmute::<_, MistSteamInputType>(

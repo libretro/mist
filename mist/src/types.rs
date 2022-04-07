@@ -462,6 +462,9 @@ impl Default for MistInputStateGamepad {
 
 #[derive(Default, Clone, Copy)]
 pub struct MistInputState {
+    pub input_handles: [MistInputHandle; MIST_STEAM_INPUT_MAX_COUNT],
+    pub input_handle_count: i32,
+    pub gamepad_mapping: [MistInputHandle; MIST_STEAM_INPUT_MAX_COUNT],
     pub gamepads: [MistInputStateGamepad; MIST_MAX_GAMEPADS],
 }
 

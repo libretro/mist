@@ -789,3 +789,14 @@ pub extern "C" fn mist_steam_input_ex_query_gamepad(index: c_int) -> bool {
 
     input_state.gamepads[index as usize].input_type != MistSteamInputType::Unknown
 }
+
+/// Checks if gamepad at index is not unknown
+/// Returns bool
+#[no_mangle]
+pub extern "C" fn mist_steam_input_ex_get_gamepad_mapping(
+    gamepad_mapping: *mut [MistInputHandle; MIST_STEAM_INPUT_MAX_COUNT],
+) {
+    let input_state = unsafe { &*MIST_INPUT_STATE };
+
+    unsafe { *gamepad_mapping = input_state.gamepad_mapping };
+}

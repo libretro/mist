@@ -872,6 +872,12 @@ MistResult mist_steam_input_translate_action_origin(enum MistSteamInputType dest
 bool mist_steam_input_ex_query_gamepad(int index);
 
 /**
+ * Checks if gamepad at index is not unknown
+ * Returns bool
+ */
+void mist_steam_input_ex_get_gamepad_mapping(MistInputHandle (*gamepad_mapping)[MIST_STEAM_INPUT_MAX_COUNT]);
+
+/**
  * Begins a file write batch, use file write batches when saving files that gets stored in Steam Cloud.
  * Will error if there is already a file write batch operation in progress.
  * Returns MistResult
