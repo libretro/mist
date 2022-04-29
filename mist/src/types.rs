@@ -1,5 +1,5 @@
 use serde_derive::{Deserialize, Serialize};
-use std::os::raw::c_float;
+use std::{os::raw::c_float, sync::atomic::AtomicU8};
 
 use crate::consts::*;
 
@@ -468,8 +468,10 @@ pub struct MistInputState {
     pub gamepads: [MistInputStateGamepad; MIST_MAX_GAMEPADS],
 }
 
-impl MistInputState {
-    pub fn shmem_size() -> usize {
-        std::mem::size_of::<MistInputState>() + 128 // Add some extra room for the mutex in front
-    }
+/// cbindgen:ignore
+#[derive(Default)]
+pub struct MistInputStateBuffered {
+    pub library_cursor: AtomicU8,
+    pub subprocess_cursor: AtomicU8,
+    pub buffer: [MistInputState; MIST_INPUT_STATE_BUFFER_SIZE as usize],
 }

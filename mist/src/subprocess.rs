@@ -5,6 +5,8 @@ use crate::{result::Error, service::*};
 
 pub type Server = MistServer<MistServerService, std::io::Stdin, std::io::Stdout>;
 
+const DEFAULT_TIMEOUT: u64 = 1000 / 120; // 120 Hz
+
 pub fn run() -> Result<()> {
     // Setup the service context which is avaliable to all the service calls
     let service = MistServerService {
@@ -31,7 +33,7 @@ pub fn run() -> Result<()> {
         std::process::exit(1);
     }
 
-    let poll_duration = Duration::from_millis(1000 / 120); // 120 Hz
+    let poll_duration = Duration::from_millis(DEFAULT_TIMEOUT); // 120 Hz
 
     while !server.service().should_exit {
         let steam_input = server.service().steam_input;
@@ -39,8 +41,20 @@ pub fn run() -> Result<()> {
             input_data.run_frame(steam_input);
         }
 
-        // Poll for messages from the library
-        server.recv_timeout(poll_duration);
+        // Check if we need to priotize Steam Input
+        if server.service().steam_input_data.is_none() {
+            // Let's just block while blocking for library calls
+            server.recv_timeout(poll_duration);
+        } else {
+            server.recv_timeout(std::time::Duration::ZERO);
+            unsafe {
+                steamworks_sys::SteamAPI_ISteamInput_BWaitForData(
+                    server.service().steam_input,
+                    false,
+                    DEFAULT_TIMEOUT as _,
+                );
+            }
+        }
 
         let steam_pipe = server.service().steam_pipe;
         let steam_user = server.service().steam_user;

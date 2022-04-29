@@ -1,9 +1,8 @@
-use raw_sync::locks::*;
 use shared_memory::{Shmem, ShmemConf};
 use std::{
     ffi::CStr,
     os::raw::{c_char, c_int, c_ushort},
-    sync::atomic::{AtomicU8, Ordering},
+    sync::atomic::Ordering,
 };
 
 use crate::{
@@ -13,10 +12,16 @@ use crate::{
     types::*,
 };
 
-static mut MIST_INPUT_STATE: *mut MistInputState = std::ptr::null_mut();
+static mut MIST_INPUT_BUFFER: usize = 0;
+static mut MIST_INPUT_STATE: *mut MistInputStateBuffered = std::ptr::null_mut();
+
+macro_rules! get_input_state {
+    () => {
+        &unsafe { &*MIST_INPUT_STATE }.buffer[unsafe { MIST_INPUT_BUFFER }]
+    };
+}
 
 pub struct MistSteamInputClient {
-    lock: Box<dyn LockImpl>,
     shmem: Shmem,
 }
 
@@ -24,7 +29,7 @@ impl MistSteamInputClient {
     fn setup(subprocess: &mut MistSubprocess, os_id: String) -> MistResult {
         let shmem = match ShmemConf::new()
             .os_id(&os_id)
-            .size(MistInputState::shmem_size())
+            .size(std::mem::size_of::<MistInputStateBuffered>())
             .open()
         {
             Ok(shmem) => shmem,
@@ -33,37 +38,32 @@ impl MistSteamInputClient {
             }
         };
 
-        unsafe { MIST_INPUT_STATE = Box::leak(Box::new(MistInputState::default())) as *mut _ };
+        unsafe {
+            MIST_INPUT_STATE = shmem.as_ptr() as *mut _;
+        }
 
-        let raw_ptr = shmem.as_ptr();
-        let state_ptr =
-            unsafe { raw_ptr.add(Mutex::size_of(Some(raw_ptr)) + std::mem::size_of::<AtomicU8>()) };
-
-        let (lock, _bytes_used) = unsafe { Mutex::from_existing(raw_ptr, state_ptr).unwrap() };
-
-        subprocess.state_mut().input_client = Some(MistSteamInputClient { lock, shmem });
+        subprocess.state_mut().input_client = Some(MistSteamInputClient { shmem });
 
         Success
     }
 
     fn run_frame(&mut self) -> MistResult {
-        let raw_ptr = self.shmem.as_ptr();
-        let counter_ptr: *mut AtomicU8 =
-            unsafe { raw_ptr.add(Mutex::size_of(Some(raw_ptr))) } as *mut AtomicU8;
-        let state_ptr =
-            unsafe { raw_ptr.add(Mutex::size_of(Some(raw_ptr)) + std::mem::size_of::<AtomicU8>()) };
+        let state = unsafe { &mut *(self.shmem.as_ptr() as *mut MistInputStateBuffered) };
 
-        let state_ptr = state_ptr as *mut MistInputState;
+        let next_library_cursor =
+            (state.library_cursor.load(Ordering::Relaxed) + 1) % MIST_INPUT_STATE_BUFFER_SIZE;
 
-        let guard = self.lock.lock().unwrap();
+        if next_library_cursor == state.subprocess_cursor.load(Ordering::Relaxed) {
+            return Success;
+        }
 
-        // Copy the state
-        unsafe { *MIST_INPUT_STATE = *state_ptr };
+        unsafe {
+            MIST_INPUT_BUFFER = next_library_cursor as _;
+        }
 
-        drop(guard);
-
-        // Add 1 to the counter
-        unsafe { &mut *counter_ptr }.fetch_add(1, Ordering::Relaxed);
+        state
+            .library_cursor
+            .store(next_library_cursor, Ordering::Relaxed);
 
         Success
     }
@@ -204,7 +204,7 @@ pub extern "C" fn mist_steam_input_get_analog_action_data(
     input_handle: MistInputHandle,
     analog_action_handle: MistInputAnalogActionHandle,
 ) -> MistInputAnalogActionData {
-    let input_state = unsafe { &*MIST_INPUT_STATE };
+    let input_state = get_input_state!();
 
     for i in 0..MIST_MAX_GAMEPADS {
         let pad = &input_state.gamepads[i];
@@ -353,7 +353,7 @@ pub extern "C" fn mist_steam_input_get_digital_action_data(
     input_handle: MistInputHandle,
     digital_action_handle: MistInputDigitalActionHandle,
 ) -> MistInputDigitalActionData {
-    let input_state = unsafe { &*MIST_INPUT_STATE };
+    let input_state = get_input_state!();
 
     for i in 0..MIST_MAX_GAMEPADS {
         let pad = &input_state.gamepads[i];
@@ -525,7 +525,7 @@ pub extern "C" fn mist_steam_input_get_input_type_for_handle(
 pub extern "C" fn mist_steam_input_get_motion_data(
     input_handle: MistInputHandle,
 ) -> MistInputMotionData {
-    let input_state = unsafe { &*MIST_INPUT_STATE };
+    let input_state = get_input_state!();
 
     for i in 0..MIST_MAX_GAMEPADS {
         let pad = &input_state.gamepads[i];
@@ -785,7 +785,7 @@ pub extern "C" fn mist_steam_input_translate_action_origin(
 /// Returns bool
 #[no_mangle]
 pub extern "C" fn mist_steam_input_ex_query_gamepad(index: c_int) -> bool {
-    let input_state = unsafe { &*MIST_INPUT_STATE };
+    let input_state = get_input_state!();
 
     input_state.gamepads[index as usize].input_type != MistSteamInputType::Unknown
 }
@@ -796,7 +796,7 @@ pub extern "C" fn mist_steam_input_ex_query_gamepad(index: c_int) -> bool {
 pub extern "C" fn mist_steam_input_ex_get_gamepad_mapping(
     gamepad_mapping: *mut [MistInputHandle; MIST_STEAM_INPUT_MAX_COUNT],
 ) {
-    let input_state = unsafe { &*MIST_INPUT_STATE };
+    let input_state = get_input_state!();
 
     unsafe { *gamepad_mapping = input_state.gamepad_mapping };
 }

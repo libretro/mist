@@ -1,9 +1,8 @@
-use raw_sync::locks::*;
 use shared_memory::{Shmem, ShmemConf};
 use std::{
     ffi::{CStr, CString},
     os::raw::{c_char, c_int, c_ushort},
-    sync::atomic::{AtomicU8, Ordering},
+    sync::atomic::Ordering,
 };
 
 use super::MistServerService;
@@ -16,16 +15,16 @@ use crate::{
 
 pub struct SteamInputData {
     shmem: Shmem,
-    state: MistInputState,
-    last_counter: u8,
     analog_actions: Vec<MistInputAnalogActionHandle>,
     digital_actions: Vec<MistInputDigitalActionHandle>,
-    lock: Box<dyn LockImpl>,
 }
 
 impl SteamInputData {
     pub fn new() -> Result<Self, Error> {
-        let shmem = match ShmemConf::new().size(MistInputState::shmem_size()).create() {
+        let shmem = match ShmemConf::new()
+            .size(std::mem::size_of::<MistInputStateBuffered>())
+            .create()
+        {
             Ok(shmem) => shmem,
             Err(err) => {
                 eprintln!("[mist] Error setting up shmem: {}", err);
@@ -33,30 +32,13 @@ impl SteamInputData {
             }
         };
 
-        let raw_ptr = shmem.as_ptr();
-        let counter_ptr: *mut AtomicU8 =
-            unsafe { raw_ptr.add(Mutex::size_of(Some(raw_ptr))) } as *mut AtomicU8;
-        let state_ptr =
-            unsafe { raw_ptr.add(Mutex::size_of(Some(raw_ptr)) + std::mem::size_of::<AtomicU8>()) };
-
-        let (lock, _bytes_used) = match unsafe { Mutex::new(raw_ptr, state_ptr) } {
-            Ok(l) => l,
-            Err(err) => {
-                eprintln!("[mist] Error creating shmem mutex: {}", err);
-                return Err(Error::SteamInput(SteamInputError::ShmemError));
-            }
-        };
-        let state_ptr = state_ptr as *mut MistInputState;
-        unsafe { *state_ptr = MistInputState::default() };
-        unsafe { *counter_ptr = AtomicU8::new(0) };
+        let state_ptr = shmem.as_ptr() as *mut MistInputStateBuffered;
+        unsafe { *state_ptr = MistInputStateBuffered::default() };
 
         Ok(SteamInputData {
             shmem,
-            state: MistInputState::default(),
-            last_counter: 0,
             analog_actions: Vec::new(),
             digital_actions: Vec::new(),
-            lock,
         })
     }
 
@@ -64,32 +46,31 @@ impl SteamInputData {
         self.shmem.get_os_id().to_owned()
     }
 
-    fn get_counter(&self) -> u8 {
-        let raw_ptr = self.shmem.as_ptr();
-        let counter_ptr: *mut AtomicU8 =
-            unsafe { raw_ptr.add(Mutex::size_of(Some(raw_ptr))) } as *mut AtomicU8;
-        unsafe { &*counter_ptr }.load(Ordering::Relaxed)
-    }
-
     pub fn run_frame(&mut self, steam_input: *mut steamworks_sys::ISteamInput) {
-        // Do not poll input until the library has processed the last one so we do not drop input
-        if self.last_counter == self.get_counter() {
+        let state = unsafe { &mut *(self.shmem.as_ptr() as *mut MistInputStateBuffered) };
+
+        let next_subprocess_cursor =
+            (state.subprocess_cursor.load(Ordering::Relaxed) + 1) % MIST_INPUT_STATE_BUFFER_SIZE;
+
+        if next_subprocess_cursor == state.library_cursor.load(Ordering::Relaxed) {
             return;
         }
 
         unsafe { steamworks_sys::SteamAPI_ISteamInput_RunFrame(steam_input, true) };
 
-        self.state.input_handle_count = unsafe {
+        let input_state = &mut state.buffer[next_subprocess_cursor as usize];
+
+        input_state.input_handle_count = unsafe {
             steamworks_sys::SteamAPI_ISteamInput_GetConnectedControllers(
                 steam_input,
-                &mut self.state.input_handles as *mut _,
+                &mut input_state.input_handles as *mut _,
             )
         };
 
-        let input_handles = &self.state.input_handles[..self.state.input_handle_count as usize];
+        let input_handles = &input_state.input_handles[..input_state.input_handle_count as usize];
 
         // Remove gamepads no longer connected
-        for handle in self.state.gamepad_mapping.iter_mut() {
+        for handle in input_state.gamepad_mapping.iter_mut() {
             if *handle != 0 && !input_handles.contains(handle) {
                 *handle = 0;
             }
@@ -97,21 +78,21 @@ impl SteamInputData {
 
         // Add gamepads not mapped
         for handle in input_handles {
-            if !self.state.gamepad_mapping.contains(handle) {
-                if let Some(free_pos) = self.state.gamepad_mapping.iter().position(|h| *h == 0) {
-                    self.state.gamepad_mapping[free_pos] = *handle;
+            if !input_state.gamepad_mapping.contains(handle) {
+                if let Some(free_pos) = input_state.gamepad_mapping.iter().position(|h| *h == 0) {
+                    input_state.gamepad_mapping[free_pos] = *handle;
                 }
             }
         }
 
         for i in 0..MIST_STEAM_INPUT_MAX_COUNT {
-            let input_handle = self.state.gamepad_mapping[i];
+            let input_handle = input_state.gamepad_mapping[i];
 
             if input_handle == 0 {
                 continue;
             }
 
-            let pad = &mut self.state.gamepads[i];
+            let pad = &mut input_state.gamepads[i];
 
             let input_type = unsafe {
                 std::mem::transmute::<_, MistSteamInputType>(
@@ -174,22 +155,9 @@ impl SteamInputData {
             }
         }
 
-        // Update the state in the shared memory
-        let raw_ptr = self.shmem.as_ptr();
-        let counter_ptr: *mut AtomicU8 =
-            unsafe { raw_ptr.add(Mutex::size_of(Some(raw_ptr))) } as *mut AtomicU8;
-        let state_ptr =
-            unsafe { raw_ptr.add(Mutex::size_of(Some(raw_ptr)) + std::mem::size_of::<AtomicU8>()) };
-
-        let state_ptr = state_ptr as *mut MistInputState;
-
-        let guard = self.lock.lock().unwrap();
-
-        // Copy the state
-        unsafe { *state_ptr = self.state };
-        self.last_counter = unsafe { &*counter_ptr }.load(Ordering::Relaxed);
-
-        drop(guard);
+        state
+            .subprocess_cursor
+            .store(next_subprocess_cursor, Ordering::Relaxed);
     }
 }
 

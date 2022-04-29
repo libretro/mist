@@ -1,6 +1,9 @@
 // Used to throw an error when running the subprocess directly
 pub const PROCESS_INIT_SECRET: &str = "youarenotsupposedtorunmistdirectly";
 
+/// cbindgen:ignore
+pub const MIST_INPUT_STATE_BUFFER_SIZE: u8 = 3;
+
 pub const MIST_STEAM_INPUT_MAX_COUNT: usize = 16;
 pub const MIST_STEAM_INPUT_MAX_ANALOG_ACTIONS: usize = 16;
 pub const MIST_STEAM_INPUT_MAX_DIGITAL_ACTIONS: usize = 128;

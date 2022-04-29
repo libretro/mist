@@ -983,7 +983,6 @@ dependencies = [
  "lazy_static",
  "parking_lot 0.12.0",
  "paste",
- "raw_sync",
  "serde",
  "serde_derive",
  "shared_memory",
@@ -1353,18 +1352,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b800beb9b6e7d2df1fe337c9e3d04e3af22a124460fb4c30fcc22c9117cefb41"
 dependencies = [
  "cty",
-]
-
-[[package]]
-name = "raw_sync"
-version = "0.1.5"
-source = "git+https://git.libretro.com/libretro-steam/raw_sync.git#d140773fc9453c66ce354b4c12096302bcda6c3f"
-dependencies = [
- "cfg-if 1.0.0",
- "libc",
- "nix 0.23.1",
- "rand",
- "winapi",
 ]
 
 [[package]]
