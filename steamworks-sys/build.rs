@@ -30,6 +30,15 @@ fn main() {
             .unwrap();
             println!("cargo:rustc-link-lib=dylib=steam_api");
         }
+        // macOS arm64
+        "aarch64-apple-darwin" => {
+            fs::copy(
+                sdk_path.join("redistributable_bin/osx/libsteam_api.dylib"),
+                out_path.join("libsteam_api.dylib"),
+            )
+            .unwrap();
+            println!("cargo:rustc-link-lib=dylib=steam_api");
+        }
         // Windows 64-bit
         "x86_64-pc-windows-gnu" | "x86_64-pc-windows-msvc" => {
             fs::copy(

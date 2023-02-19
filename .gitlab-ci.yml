@@ -33,6 +33,43 @@ build-linux-x64:
     - cp ./target/$RUST_TARGET/release/app_install_dir ./mist-linux-x64/mist
     - cp ./steamworks/redistributable_bin/linux64/libsteam_api.so ./mist-linux-x64/mist
 
+.build-osx-common:
+  tags:
+    - macosx-packaging
+  extends: .build-common
+  script: &build_osx_common_script
+    - *build_common_script
+    - STEAMWORKS_SDK="$(pwd)/steamworks" cargo build --release --target=$RUST_TARGET --bin app_install_dir
+    - mkdir -p $MIST_PATH/mist
+    - cp ./target/$RUST_TARGET/release/libmist.dylib ./$MIST_PATH/
+    - cp ./target/$RUST_TARGET/release/mist ./$MIST_PATH/mist/
+    - cp ./target/$RUST_TARGET/release/app_install_dir ./$MIST_PATH/mist/
+    - cp ./steamworks/redistributable_bin/osx/libsteam_api.dylib ./$MIST_PATH/mist/
+
+build-osx-arm64:
+  extends: .build-osx-common
+  artifacts:
+    paths:
+    - mist-osx-arm64
+    expire_in: 1 hour
+  variables:
+    RUST_TARGET: aarch64-apple-darwin
+    MIST_PATH: mist-osx-arm64
+  script:
+    - *build_osx_common_script
+
+build-osx-x64:
+  extends: .build-osx-common
+  artifacts:
+    paths:
+    - mist-osx-x64
+    expire_in: 1 hour
+  variables:
+    RUST_TARGET: x86_64-apple-darwin
+    MIST_PATH: mist-osx-x64
+  script:
+    - *build_osx_common_script
+
 build-windows-x64:
   extends: .build-common
   artifacts:
@@ -55,6 +92,10 @@ package:
       artifacts: true
     - job: build-linux-x64
       artifacts: true
+    - job: build-osx-x64
+      artifacts: true
+    - job: build-osx-arm64
+      artifacts: true
   artifacts:
     paths:
     - mist
@@ -69,6 +110,16 @@ package:
     - cp -r ./include ./mist/mist-linux-x64
     - cp ./LICENSE ./mist/mist-linux-x64/mist/mist-LICENSE.txt
     - cp ./mist-ThirdPartyLicenses.txt ./mist/mist-linux-x64/mist/
+    # Mac
+    - mkdir -p ./mist/mist-osx/mist/
+    - cp -r ./include ./mist/mist-osx
+    - lipo -create -output ./mist/mist-osx/libmist.dylib ./mist-osx-arm64/libmist.dylib ./mist-osx-x64/libmist.dylib
+    - lipo -create -output ./mist/mist-osx/mist/app_install_dir ./mist-osx-arm64/app_install_dir ./mist-osx-x64/app_install_dir
+      # the libsteam_api.dylib is already universal
+    - cp ./mist-osx-x64/libsteam_api.dylib ./mist-osx/mist/
+    - lipo -create -output ./mist/mist-osx/mist/mist ./mist-osx-arm64/mist ./mist-osx-x64/mist
+    - cp ./LICENSE ./mist/mist-osx/mist/mist-LICENSE.txt
+    - cp ./mist-ThirdPartyLicenses.txt ./mist/mist-osx/mist/
     # Windows
     - cp -r ./mist-windows-x64 ./mist/
     - cp -r ./include ./mist/mist-windows-x64
