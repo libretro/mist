@@ -27,22 +27,18 @@ build-linux-x64:
     RUST_TARGET: x86_64-unknown-linux-gnu
   script:
     - *build_common_script
-    - STEAMWORKS_SDK="$(pwd)/steamworks" cargo build --release --target=$RUST_TARGET --bin app_install_dir
     - mkdir -p mist-linux-x64/mist
     - cp ./target/$RUST_TARGET/release/libmist.so ./mist-linux-x64
     - cp ./target/$RUST_TARGET/release/mist ./mist-linux-x64/mist
-    - cp ./target/$RUST_TARGET/release/app_install_dir ./mist-linux-x64/mist
     - cp ./steamworks/redistributable_bin/linux64/libsteam_api.so ./mist-linux-x64/mist
 
 .build-osx-common:
   extends: .build-common
   script: &build_osx_common_script
     - *build_common_script
-    - STEAMWORKS_SDK="$(pwd)/steamworks" cargo build --release --target=$RUST_TARGET --bin app_install_dir
     - mkdir -p $MIST_PATH/mist
     - cp ./target/$RUST_TARGET/release/libmist.dylib ./$MIST_PATH/
     - cp ./target/$RUST_TARGET/release/mist ./$MIST_PATH/mist/
-    - cp ./target/$RUST_TARGET/release/app_install_dir ./$MIST_PATH/mist/
     - cp ./steamworks/redistributable_bin/osx/libsteam_api.dylib ./$MIST_PATH/mist/
 
 build-osx-arm64:
@@ -124,7 +120,6 @@ package:
     - mkdir -p ./mist/mist-osx/mist/
     - cp -r ./include ./mist/mist-osx
     - llvm-lipo-11 -create -output ./mist/mist-osx/libmist.dylib ./mist-osx-arm64/libmist.dylib ./mist-osx-x64/libmist.dylib
-    - llvm-lipo-11 -create -output ./mist/mist-osx/mist/app_install_dir ./mist-osx-arm64/mist/app_install_dir ./mist-osx-x64/mist/app_install_dir
       # the libsteam_api.dylib is already universal
     - cp ./mist-osx-x64/mist/libsteam_api.dylib ./mist/mist-osx/mist/
     - llvm-lipo-11 -create -output ./mist/mist-osx/mist/mist ./mist-osx-arm64/mist/mist ./mist-osx-x64/mist/mist
