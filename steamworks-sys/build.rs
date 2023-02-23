@@ -22,7 +22,7 @@ fn main() {
             println!("cargo:rustc-link-lib=dylib=steam_api");
         }
         // macOS 64-bit
-        "x86_64-apple-darwin" => {
+        "x86_64-apple-darwin" | "aarch64-apple-darwin" => {
             fs::copy(
                 sdk_path.join("redistributable_bin/osx/libsteam_api.dylib"),
                 out_path.join("libsteam_api.dylib"),
@@ -57,12 +57,18 @@ fn main() {
             "-I{}",
             Path::new(&sdk_path).join("public").to_string_lossy()
         ))
-        .clang_args(&["-xc++", "-std=c++11"]);
+        .clang_args(&["-xc++", "-std=c++11", "-stdlib=libc++"]);
 
     #[cfg(unix)]
     {
         if target == "x86_64-pc-windows-gnu" {
             bindings_builder = bindings_builder.clang_arg("-I/usr/x86_64-w64-mingw32/include/");
+        } else if target == "x86_64-apple-darwin" || target == "aarch64-apple-darwin" {
+            let sdk_ver = env::var("SDK_VERSION").unwrap();
+            bindings_builder = bindings_builder.clang_arg(format!(
+                "-I/osxcross/target/SDK/MacOSX{}.sdk/usr/include/",
+                sdk_ver
+            ));
         }
     }
 

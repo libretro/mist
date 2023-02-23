@@ -98,15 +98,29 @@ pub fn mist_init_subprocess() -> Result<(), Error> {
         panic!("[mist] unsupported platform")
     };
 
-    let (exe_cwd, exe_path) = match std::env::current_dir() {
-        Ok(p) => {
-            let exe_cwd = p.join("mist");
-            let exe_path = exe_cwd.join(exe);
-            (exe_cwd, exe_path)
+    let (exe_cwd, exe_path) = if cfg!(target_os = "macos") {
+        match std::env::current_exe() {
+            Ok(p) => {
+                let exe_cwd = p.parent().unwrap().join("mist");
+                let exe_path = exe_cwd.join(exe);
+                (exe_cwd, exe_path)
+            }
+            Err(err) => {
+                crate::mist_log_error(&format!("Invalid current path: {}", err));
+                return Err(Error::Mist(MistError::SubprocessNotFound));
+            }
         }
-        Err(err) => {
-            crate::mist_log_error(&format!("Invalid current path: {}", err));
-            return Err(Error::Mist(MistError::SubprocessNotFound));
+    } else {
+        match std::env::current_dir() {
+            Ok(p) => {
+                let exe_cwd = p.join("mist");
+                let exe_path = exe_cwd.join(exe);
+                (exe_cwd, exe_path)
+            }
+            Err(err) => {
+                crate::mist_log_error(&format!("Invalid current path: {}", err));
+                return Err(Error::Mist(MistError::SubprocessNotFound));
+            }
         }
     };
 
