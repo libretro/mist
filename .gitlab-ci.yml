@@ -108,7 +108,7 @@ package:
     expire_in: 1 hour
   script:
     # Generate third party licenses
-    - cargo install cargo-about --locked
+    - cargo install --version 0.6.4 --locked cargo-about
     - cargo about generate about.hbs > ./mist-ThirdPartyLicenses.txt
     - rm -rf mist/ && mkdir -p mist/
     # Linux
