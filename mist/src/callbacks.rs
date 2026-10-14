@@ -16,7 +16,7 @@ mist_callbacks!(
             [(|server, event| {
                 if !event.m_bSubmitted { return; }
 
-                let steam_utils = unsafe { steamworks_sys::SteamAPI_SteamUtils_v010() };
+                let steam_utils = unsafe { steamworks_sys::SteamAPI_SteamUtils_v011() };
 
                 let text_len = unsafe { steamworks_sys::SteamAPI_ISteamUtils_GetEnteredGamepadTextLength(steam_utils) };
 

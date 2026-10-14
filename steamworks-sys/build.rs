@@ -21,6 +21,14 @@ fn main() {
             .unwrap();
             println!("cargo:rustc-link-lib=dylib=steam_api");
         }
+        "aarch64-unknown-linux-gnu" => {
+            fs::copy(
+                sdk_path.join("redistributable_bin/linuxarm64/libsteam_api.so"),
+                out_path.join("libsteam_api.so"),
+            )
+            .unwrap();
+            println!("cargo:rustc-link-lib=dylib=steam_api");
+        }
         // macOS 64-bit
         "x86_64-apple-darwin" | "aarch64-apple-darwin" => {
             fs::copy(
@@ -57,7 +65,8 @@ fn main() {
             "-I{}",
             Path::new(&sdk_path).join("public").to_string_lossy()
         ))
-        .clang_args(&["-xc++", "-std=c++11", "-stdlib=libc++"]);
+        .clang_args(&["-xc++", "-std=c++11", "-stdlib=libc++"])
+        .opaque_type("ISteam.*");
 
     #[cfg(unix)]
     {

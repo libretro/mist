@@ -25,8 +25,14 @@ fn main() {
 
     // Init the steam api
     unsafe {
-        if !steamworks_sys::SteamAPI_Init() {
-            eprintln!("[mist] Error during SteamAPI init.");
+        let mut err_msg: steamworks_sys::SteamErrMsg = [0; 1024];
+        if steamworks_sys::SteamAPI_InitFlat(&mut err_msg)
+            != steamworks_sys::ESteamAPIInitResult_k_ESteamAPIInitResult_OK
+        {
+            eprintln!(
+                "[mist] Error during SteamAPI init: {}",
+                std::ffi::CStr::from_ptr(err_msg.as_ptr()).to_string_lossy()
+            );
             std::process::exit(1);
         }
 

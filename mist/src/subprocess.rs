@@ -10,13 +10,13 @@ const DEFAULT_TIMEOUT: u64 = 1000 / 120; // 120 Hz
 pub fn run() -> Result<()> {
     // Setup the service context which is avaliable to all the service calls
     let service = MistServerService {
-        steam_apps: unsafe { steamworks_sys::SteamAPI_SteamApps_v008() },
+        steam_apps: unsafe { steamworks_sys::SteamAPI_SteamApps_v009() },
         steam_pipe: unsafe { steamworks_sys::SteamAPI_GetHSteamPipe() },
-        steam_friends: unsafe { steamworks_sys::SteamAPI_SteamFriends_v017() },
-        steam_input: unsafe { steamworks_sys::SteamAPI_SteamInput_v006() },
+        steam_friends: unsafe { steamworks_sys::SteamAPI_SteamFriends_v018() },
+        steam_input: unsafe { steamworks_sys::SteamAPI_SteamInput_v007() },
         steam_remote_storage: unsafe { steamworks_sys::SteamAPI_SteamRemoteStorage_v016() },
         steam_user: unsafe { steamworks_sys::SteamAPI_GetHSteamUser() },
-        steam_utils: unsafe { steamworks_sys::SteamAPI_SteamUtils_v010() },
+        steam_utils: unsafe { steamworks_sys::SteamAPI_SteamUtils_v011() },
         entered_gamepad_text: None,
         steam_input_data: None,
         should_exit: false,
