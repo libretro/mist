@@ -69,9 +69,7 @@ build-osx-arm64:
     MIST_PATH: mist-osx-arm64
   script:
     - export LINKER_FILE="/osxcross/target/bin/arm64-apple-${TOOLCHAIN_VERSION}-clang"
-    - export AR_FILE="/osxcross/target/bin/arm64-apple-${TOOLCHAIN_VERSION}-ar"
     - export CARGO_TARGET_AARCH64_APPLE_DARWIN_LINKER="${LINKER_FILE}"
-    - export CARGO_TARGET_AARCH64_APPLE_DARWIN_RUSTFLAGS="-Car=${AR_FILE},-Clink-arg=-undefined,-Clink-arg=dynamic_lookup"
     - *build_osx_common_script
 
 build-osx-x64:
@@ -84,12 +82,10 @@ build-osx-x64:
   variables:
     RUST_TARGET: x86_64-apple-darwin
     MIST_PATH: mist-osx-x64
-    MACOSX_DEPLOYMENT_TARGET: "10.7"
+    MACOSX_DEPLOYMENT_TARGET: "10.12"
   script:
     - export LINKER_FILE="/osxcross/target/bin/x86_64-apple-${TOOLCHAIN_VERSION}-clang"
-    - export AR_FILE="/osxcross/target/bin/x86_64-apple-${TOOLCHAIN_VERSION}-ar"
     - export CARGO_TARGET_X86_64_APPLE_DARWIN_LINKER="${LINKER_FILE}"
-    - export CARGO_TARGET_X86_64_APPLE_DARWIN_RUSTFLAGS="-Car=${AR_FILE},-Clink-arg=-undefined,-Clink-arg=dynamic_lookup"
     - *build_osx_common_script
 
 build-windows-x64:
