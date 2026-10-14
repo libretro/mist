@@ -837,6 +837,24 @@ typedef enum MistFloatingGamepadTextInputMode {
   MistFloatingGamepadTextInputMode_Numeric = 3,
 } MistFloatingGamepadTextInputMode;
 
+typedef enum MistSteamHardwareType {
+  MistSteamHardwareType_None = 0,
+  MistSteamHardwareType_SteamDeck = 1,
+  MistSteamHardwareType_SteamMachine = 2,
+  MistSteamHardwareType_SteamFrame = 3,
+} MistSteamHardwareType;
+
+typedef enum MistSteamHardwareDefaultConfig {
+  MistSteamHardwareDefaultConfig_None = 0,
+  MistSteamHardwareDefaultConfig_Low = 1,
+  MistSteamHardwareDefaultConfig_Medium = 2,
+  MistSteamHardwareDefaultConfig_High = 3,
+  MistSteamHardwareDefaultConfig_Max = 4,
+  MistSteamHardwareDefaultConfig_SteamDeck = 5,
+  MistSteamHardwareDefaultConfig_SteamMachine = 6,
+  MistSteamHardwareDefaultConfig_SteamFrame = 7,
+} MistSteamHardwareDefaultConfig;
+
 typedef uint32_t MistResult;
 
 typedef int32_t SteamUser;
@@ -1479,6 +1497,7 @@ MistResult mist_steam_utils_is_vr_headset_streaming_enabled(bool *vr_streaming_e
 
 /**
  * Return if steam is running on a steam deck in the out ptr
+ * Deprecated by Steamworks, prefer mist_steam_utils_is_running_on_steam_hardware
  * Returns MistResult
  */
 MistResult mist_steam_utils_is_steam_running_on_steam_deck(bool *on_deck);
@@ -1524,6 +1543,31 @@ MistResult mist_steam_utils_set_game_launcher_mode(bool launcher_mode);
  * Returns MistResult
  */
 MistResult mist_steam_utils_start_vr_dashboard(void);
+
+/**
+ * Dismiss the full-screen gamepad text input, returns if it was dismissed in the out ptr
+ * Returns MistResult
+ */
+MistResult mist_steam_utils_dismiss_gamepad_text_input(bool *dismissed);
+
+/**
+ * Return the Steam hardware the game is running on in the out ptr
+ * Meant for analytics, support or diagnostics, not functional decisions
+ * Returns MistResult
+ */
+MistResult mist_steam_utils_is_running_on_steam_hardware(enum MistSteamHardwareType *hardware_type);
+
+/**
+ * Return the default settings config tuned for the Steam hardware in the out ptr
+ * Returns MistResult
+ */
+MistResult mist_steam_utils_get_steam_hardware_default_config(enum MistSteamHardwareDefaultConfig *config);
+
+/**
+ * Return if the game is running under Proton in the out ptr
+ * Returns MistResult
+ */
+MistResult mist_steam_utils_is_running_under_proton(bool *under_proton);
 
 #include "mist_callbacks.h"
 

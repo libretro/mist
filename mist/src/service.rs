@@ -125,6 +125,10 @@ mist_service!(
         ) -> bool;
         fn set_game_launcher_mode(launcher_mode: bool);
         fn start_vr_dashboard();
+        fn dismiss_gamepad_text_input() -> bool;
+        fn is_running_on_steam_hardware() -> MistSteamHardwareType;
+        fn get_steam_hardware_default_config() -> MistSteamHardwareDefaultConfig;
+        fn is_running_under_proton() -> bool;
     }
 
     // Internal

@@ -7,7 +7,7 @@ use crate::{
     result::{Error, MistResult, SteamUtilsError, Success},
     types::{
         AppId, MistFloatingGamepadTextInputMode, MistGamepadTextInputLineMode,
-        MistGamepadTextInputMode,
+        MistGamepadTextInputMode, MistSteamHardwareDefaultConfig, MistSteamHardwareType,
     },
 };
 
@@ -172,6 +172,7 @@ pub extern "C" fn mist_steam_utils_is_vr_headset_streaming_enabled(
 }
 
 /// Return if steam is running on a steam deck in the out ptr
+/// Deprecated by Steamworks, prefer mist_steam_utils_is_running_on_steam_hardware
 /// Returns MistResult
 #[no_mangle]
 pub extern "C" fn mist_steam_utils_is_steam_running_on_steam_deck(
@@ -295,6 +296,80 @@ pub extern "C" fn mist_steam_utils_start_vr_dashboard() -> MistResult {
     let mut subprocess = get_subprocess!();
 
     unwrap_client_result!(subprocess.client().steam_utils().start_vr_dashboard());
+
+    Success
+}
+
+/// Dismiss the full-screen gamepad text input, returns if it was dismissed in the out ptr
+/// Returns MistResult
+#[no_mangle]
+pub extern "C" fn mist_steam_utils_dismiss_gamepad_text_input(dismissed: *mut bool) -> MistResult {
+    let mut subprocess = get_subprocess!();
+
+    let result = unwrap_client_result!(subprocess
+        .client()
+        .steam_utils()
+        .dismiss_gamepad_text_input());
+
+    unsafe {
+        *dismissed = result;
+    }
+
+    Success
+}
+
+/// Return the Steam hardware the game is running on in the out ptr
+/// Meant for analytics, support or diagnostics, not functional decisions
+/// Returns MistResult
+#[no_mangle]
+pub extern "C" fn mist_steam_utils_is_running_on_steam_hardware(
+    hardware_type: *mut MistSteamHardwareType,
+) -> MistResult {
+    let mut subprocess = get_subprocess!();
+
+    let result = unwrap_client_result!(subprocess
+        .client()
+        .steam_utils()
+        .is_running_on_steam_hardware());
+
+    unsafe {
+        *hardware_type = result;
+    }
+
+    Success
+}
+
+/// Return the default settings config tuned for the Steam hardware in the out ptr
+/// Returns MistResult
+#[no_mangle]
+pub extern "C" fn mist_steam_utils_get_steam_hardware_default_config(
+    config: *mut MistSteamHardwareDefaultConfig,
+) -> MistResult {
+    let mut subprocess = get_subprocess!();
+
+    let result = unwrap_client_result!(subprocess
+        .client()
+        .steam_utils()
+        .get_steam_hardware_default_config());
+
+    unsafe {
+        *config = result;
+    }
+
+    Success
+}
+
+/// Return if the game is running under Proton in the out ptr
+/// Returns MistResult
+#[no_mangle]
+pub extern "C" fn mist_steam_utils_is_running_under_proton(under_proton: *mut bool) -> MistResult {
+    let mut subprocess = get_subprocess!();
+
+    let result = unwrap_client_result!(subprocess.client().steam_utils().is_running_under_proton());
+
+    unsafe {
+        *under_proton = result;
+    }
 
     Success
 }

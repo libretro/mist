@@ -132,4 +132,68 @@ impl MistServiceSteamUtils for MistServerService {
     fn start_vr_dashboard(&mut self) -> Result<(), Error> {
         Ok(unsafe { steamworks_sys::SteamAPI_ISteamUtils_StartVRDashboard(self.steam_utils) })
     }
+
+    fn dismiss_gamepad_text_input(&mut self) -> Result<bool, Error> {
+        Ok(unsafe {
+            steamworks_sys::SteamAPI_ISteamUtils_DismissGamepadTextInput(self.steam_utils)
+        })
+    }
+
+    fn is_running_on_steam_hardware(&mut self) -> Result<MistSteamHardwareType, Error> {
+        let hardware_type = unsafe {
+            steamworks_sys::SteamAPI_ISteamUtils_IsRunningOnSteamHardware(self.steam_utils)
+        };
+
+        // Map instead of transmute so unknown future hardware types are not UB
+        Ok(match hardware_type {
+            steamworks_sys::ESteamHardwareType_k_ESteamHardwareTypeSteamDeck => {
+                MistSteamHardwareType::SteamDeck
+            }
+            steamworks_sys::ESteamHardwareType_k_ESteamHardwareTypeSteamMachine => {
+                MistSteamHardwareType::SteamMachine
+            }
+            steamworks_sys::ESteamHardwareType_k_ESteamHardwareTypeSteamFrame => {
+                MistSteamHardwareType::SteamFrame
+            }
+            _ => MistSteamHardwareType::None,
+        })
+    }
+
+    fn get_steam_hardware_default_config(
+        &mut self,
+    ) -> Result<MistSteamHardwareDefaultConfig, Error> {
+        let config = unsafe {
+            steamworks_sys::SteamAPI_ISteamUtils_GetSteamHardwareDefaultConfig(self.steam_utils)
+        };
+
+        // Map instead of transmute so unknown future configs are not UB
+        Ok(match config {
+            steamworks_sys::ESteamHardwareDefaultConfig_k_ESteamHardwareDefaultConfigLow => {
+                MistSteamHardwareDefaultConfig::Low
+            }
+            steamworks_sys::ESteamHardwareDefaultConfig_k_ESteamHardwareDefaultConfigMedium => {
+                MistSteamHardwareDefaultConfig::Medium
+            }
+            steamworks_sys::ESteamHardwareDefaultConfig_k_ESteamHardwareDefaultConfigHigh => {
+                MistSteamHardwareDefaultConfig::High
+            }
+            steamworks_sys::ESteamHardwareDefaultConfig_k_ESteamHardwareDefaultConfigMax => {
+                MistSteamHardwareDefaultConfig::Max
+            }
+            steamworks_sys::ESteamHardwareDefaultConfig_k_ESteamHardwareDefaultConfigSteamDeck => {
+                MistSteamHardwareDefaultConfig::SteamDeck
+            }
+            steamworks_sys::ESteamHardwareDefaultConfig_k_ESteamHardwareDefaultConfigSteamMachine => {
+                MistSteamHardwareDefaultConfig::SteamMachine
+            }
+            steamworks_sys::ESteamHardwareDefaultConfig_k_ESteamHardwareDefaultConfigSteamFrame => {
+                MistSteamHardwareDefaultConfig::SteamFrame
+            }
+            _ => MistSteamHardwareDefaultConfig::None,
+        })
+    }
+
+    fn is_running_under_proton(&mut self) -> Result<bool, Error> {
+        Ok(unsafe { steamworks_sys::SteamAPI_ISteamUtils_IsRunningUnderProton(self.steam_utils) })
+    }
 }

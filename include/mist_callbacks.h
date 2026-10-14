@@ -17,6 +17,7 @@ typedef struct MistCallbackRemoteStorageLocalFileChange {
 typedef struct MistCallbackGamepadTextInputDismissed {
   bool submitted;
   uint32_t submitted_len;
+  AppId app_id;
 } MistCallbackGamepadTextInputDismissed;
 
 typedef struct MistCallbackFloatingGamepadTextInputDismissed {

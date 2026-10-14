@@ -22,6 +22,7 @@ mist_callbacks!(
         GamepadTextInputDismissed {
             m_bSubmitted => submitted: bool,
             m_unSubmittedText => submitted_len: u32,
+            m_unAppID => app_id: AppId,
             [(|server, event| {
                 if !event.m_bSubmitted { return; }
 

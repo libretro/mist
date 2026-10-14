@@ -885,6 +885,28 @@ pub enum MistGamepadTextInputMode {
     Password = 1,
 }
 
+#[derive(Copy, Clone, Serialize, Deserialize, Eq, PartialEq)]
+#[repr(C)]
+pub enum MistSteamHardwareType {
+    None = 0,
+    SteamDeck = 1,
+    SteamMachine = 2,
+    SteamFrame = 3,
+}
+
+#[derive(Copy, Clone, Serialize, Deserialize, Eq, PartialEq)]
+#[repr(C)]
+pub enum MistSteamHardwareDefaultConfig {
+    None = 0,
+    Low = 1,
+    Medium = 2,
+    High = 3,
+    Max = 4,
+    SteamDeck = 5,
+    SteamMachine = 6,
+    SteamFrame = 7,
+}
+
 #[derive(Serialize, Deserialize, Eq, PartialEq)]
 #[repr(C)]
 pub enum MistFloatingGamepadTextInputMode {
