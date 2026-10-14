@@ -800,3 +800,25 @@ pub extern "C" fn mist_steam_input_ex_get_gamepad_mapping(
 
     unsafe { *gamepad_mapping = input_state.gamepad_mapping };
 }
+
+/// Set the trigger effect for a DualSense controller
+/// param must point to a ScePadTriggerEffectParam from the Steamworks SDK isteamdualsense.h
+/// Returns MistResult
+#[no_mangle]
+pub extern "C" fn mist_steam_input_set_dual_sense_trigger_effect(
+    input_handle: MistInputHandle,
+    param: *const u8,
+) -> MistResult {
+    let mut subprocess = get_subprocess!();
+    let param = unsafe {
+        std::slice::from_raw_parts(param, MIST_STEAM_INPUT_DUALSENSE_TRIGGER_EFFECT_PARAM_SIZE)
+    }
+    .to_vec();
+
+    unwrap_client_result!(subprocess
+        .client()
+        .steam_input()
+        .set_dual_sense_trigger_effect(input_handle, param));
+
+    Success
+}

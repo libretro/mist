@@ -591,4 +591,20 @@ impl MistServiceSteamInput for MistServerService {
             )
         })
     }
+
+    fn set_dual_sense_trigger_effect(
+        &mut self,
+        input_handle: MistInputHandle,
+        param: Vec<u8>,
+    ) -> Result<(), Error> {
+        unsafe {
+            steamworks_sys::SteamAPI_ISteamInput_SetDualSenseTriggerEffect(
+                self.steam_input,
+                input_handle,
+                param.as_ptr() as *const _,
+            );
+        }
+
+        Ok(())
+    }
 }

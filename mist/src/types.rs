@@ -855,6 +855,10 @@ pub enum MistSteamInputType {
 pub enum MistSteamControllerPad {
     SteamControllerPad_Left = 0,
     SteamControllerPad_Right = 1,
+    SteamControllerPad_Both = 2,
+    SteamControllerGrip_Left = 3,
+    SteamControllerGrip_Right = 4,
+    SteamControllerGrip_Both = 5,
 }
 
 #[derive(Copy, Clone, Serialize, Deserialize, Eq, PartialEq, Hash)]

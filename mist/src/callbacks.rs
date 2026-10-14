@@ -6,6 +6,15 @@ mist_callbacks!(
             m_nAppID => app_id: AppId
         }
     },
+    SteamInput {
+        SteamInputGamepadSlotChange {
+            m_unAppID => app_id: AppId,
+            m_ulDeviceHandle => device_handle: MistInputHandle,
+            m_eDeviceType => device_type: u32,
+            m_nOldGamepadSlot => old_gamepad_slot: i32,
+            m_nNewGamepadSlot => new_gamepad_slot: i32
+        }
+    },
     SteamRemoteStorage {
         RemoteStorageLocalFileChange {}
     },

@@ -89,6 +89,7 @@ mist_service!(
         fn trigger_vibration_extended(input_handle: MistInputHandle, left_speed: c_ushort, right_speed: c_ushort, left_trigger_speed: c_ushort, right_trigger_speed: c_ushort);
         fn trigger_simple_haptic_event(input_handle: MistInputHandle, haptic_location: MistControllerHapticLocation, intensity: u8, gain_db: c_char, other_intensity: u8,other_gain_db: c_char);
         fn translate_action_origin(destination_input_type: MistSteamInputType, source_origin: MistInputActionOrigin) -> MistInputActionOrigin;
+        fn set_dual_sense_trigger_effect(input_handle: MistInputHandle, param: Vec<u8>);
 }
 
     // ISteamRemoteStorage

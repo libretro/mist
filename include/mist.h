@@ -17,15 +17,20 @@
 
 #define MIST_STEAM_INPUT_MAX_COUNT 16
 
-#define MIST_STEAM_INPUT_MAX_ANALOG_ACTIONS 16
+#define MIST_STEAM_INPUT_MAX_ANALOG_ACTIONS 24
 
-#define MIST_STEAM_INPUT_MAX_DIGITAL_ACTIONS 128
+#define MIST_STEAM_INPUT_MAX_DIGITAL_ACTIONS 256
 
 #define MIST_STEAM_INPUT_MAX_ORIGINS 8
 
 #define MIST_STEAM_INPUT_MAX_ACTIVE_LAYERS 16
 
 #define MIST_MAX_GAMEPADS 16
+
+/**
+ * sizeof(ScePadTriggerEffectParam) from the Steamworks SDK isteamdualsense.h
+ */
+#define MIST_STEAM_INPUT_DUALSENSE_TRIGGER_EFFECT_PARAM_SIZE 120
 
 typedef enum MistGamePerformanceSetting {
   MistGamePerformanceSetting_NotSet = 0,
@@ -1401,6 +1406,14 @@ bool mist_steam_input_ex_query_gamepad(int index);
  * Returns bool
  */
 void mist_steam_input_ex_get_gamepad_mapping(MistInputHandle (*gamepad_mapping)[MIST_STEAM_INPUT_MAX_COUNT]);
+
+/**
+ * Set the trigger effect for a DualSense controller
+ * param must point to a ScePadTriggerEffectParam from the Steamworks SDK isteamdualsense.h
+ * Returns MistResult
+ */
+MistResult mist_steam_input_set_dual_sense_trigger_effect(MistInputHandle input_handle,
+                                                          const uint8_t *param);
 
 /**
  * Begins a file write batch, use file write batches when saving files that gets stored in Steam Cloud.
