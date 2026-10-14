@@ -466,3 +466,112 @@ pub extern "C" fn mist_steam_apps_uninstall_dlc(app_id: AppId) -> MistResult {
     unwrap_client_result!(subprocess.client().steam_apps().uninstall_dlc(app_id));
     Success
 }
+
+/// Associate upcoming playtime with the dlc app id, pass 0 to clear the context
+/// Returns MistResult
+#[no_mangle]
+pub extern "C" fn mist_steam_apps_set_dlc_context(app_id: AppId, success: *mut bool) -> MistResult {
+    let mut subprocess = get_subprocess!();
+    unsafe {
+        *success = unwrap_client_result!(subprocess.client().steam_apps().set_dlc_context(app_id))
+    };
+    Success
+}
+
+/// Get the number of beta branches, including the default "public" branch
+/// Returns MistResult
+#[no_mangle]
+pub extern "C" fn mist_steam_apps_get_num_betas(
+    total: *mut i32,
+    available: *mut i32,
+    private_betas: *mut i32,
+) -> MistResult {
+    let mut subprocess = get_subprocess!();
+    let (num_total, num_available, num_private) =
+        unwrap_client_result!(subprocess.client().steam_apps().get_num_betas());
+
+    unsafe {
+        *total = num_total;
+        *available = num_available;
+        *private_betas = num_private;
+    }
+
+    Success
+}
+
+/// Get the info for the beta branch by index, flags are EBetaBranchFlags bits from the Steamworks SDK
+/// Returns MistResult
+#[no_mangle]
+pub extern "C" fn mist_steam_apps_get_beta_info(
+    beta_index: i32,
+    flags: *mut u32,
+    build_id: *mut u32,
+    name: *mut c_char,
+    name_size: u32,
+    description: *mut c_char,
+    description_size: u32,
+    last_updated: *mut u32,
+) -> MistResult {
+    let mut subprocess = get_subprocess!();
+    let beta = unwrap_client_result!(subprocess.client().steam_apps().get_beta_info(beta_index));
+    let name_cstr = CString::new(beta.name).unwrap_or_default();
+    let description_cstr = CString::new(beta.description).unwrap_or_default();
+
+    unsafe {
+        *flags = beta.flags;
+        *build_id = beta.build_id;
+        *last_updated = beta.last_updated;
+        crate::copy_string_out(&name_cstr, name, name_size as _);
+        crate::copy_string_out(&description_cstr, description, description_size as _);
+    }
+
+    Success
+}
+
+/// Select the beta branch as active, the game might need to restart so Steam can update to it
+/// Returns MistResult
+#[no_mangle]
+pub extern "C" fn mist_steam_apps_set_active_beta(
+    beta_name: *const c_char,
+    success: *mut bool,
+) -> MistResult {
+    let mut subprocess = get_subprocess!();
+    let beta_name = unsafe { CStr::from_ptr(beta_name) }
+        .to_string_lossy()
+        .to_string();
+
+    unsafe {
+        *success =
+            unwrap_client_result!(subprocess.client().steam_apps().set_active_beta(beta_name))
+    };
+    Success
+}
+
+/// Report the game performance setting the user has selected
+/// Returns MistResult
+#[no_mangle]
+pub extern "C" fn mist_steam_apps_set_game_performance_setting(
+    setting: MistGamePerformanceSetting,
+) -> MistResult {
+    let mut subprocess = get_subprocess!();
+    unwrap_client_result!(subprocess
+        .client()
+        .steam_apps()
+        .set_game_performance_setting(setting));
+    Success
+}
+
+/// Report the resolution the game is rendering at
+/// Returns MistResult
+#[no_mangle]
+pub extern "C" fn mist_steam_apps_set_game_render_resolution(
+    width: u32,
+    height: u32,
+) -> MistResult {
+    let mut subprocess = get_subprocess!();
+    unwrap_client_result!(subprocess
+        .client()
+        .steam_apps()
+        .set_game_render_resolution(width, height));
+    Success
+}

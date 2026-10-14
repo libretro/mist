@@ -257,4 +257,94 @@ impl MistServiceSteamApps for MistServerService {
 
         Ok(())
     }
+
+    fn set_dlc_context(&mut self, app_id: AppId) -> Result<bool, Error> {
+        Ok(unsafe { steamworks_sys::SteamAPI_ISteamApps_SetDlcContext(self.steam_apps, app_id) })
+    }
+
+    fn get_num_betas(&mut self) -> Result<(i32, i32, i32), Error> {
+        let mut available = 0;
+        let mut private = 0;
+        let total = unsafe {
+            steamworks_sys::SteamAPI_ISteamApps_GetNumBetas(
+                self.steam_apps,
+                &mut available,
+                &mut private,
+            )
+        };
+
+        Ok((total, available, private))
+    }
+
+    fn get_beta_info(&mut self, beta_index: i32) -> Result<BetaInfo, Error> {
+        let mut flags = 0;
+        let mut build_id = 0;
+        let mut name = vec![0; 2048];
+        let mut description = vec![0; 2048];
+        let mut last_updated = 0;
+
+        let ok = unsafe {
+            steamworks_sys::SteamAPI_ISteamApps_GetBetaInfo(
+                self.steam_apps,
+                beta_index,
+                &mut flags,
+                &mut build_id,
+                name.as_mut_ptr(),
+                name.len() as i32,
+                description.as_mut_ptr(),
+                description.len() as i32,
+                &mut last_updated,
+            )
+        };
+
+        if ok {
+            Ok(BetaInfo {
+                flags,
+                build_id,
+                name: unsafe { CStr::from_ptr(name.as_ptr()) }
+                    .to_string_lossy()
+                    .into(),
+                description: unsafe { CStr::from_ptr(description.as_ptr()) }
+                    .to_string_lossy()
+                    .into(),
+                last_updated,
+            })
+        } else {
+            Err(Error::SteamApps(SteamAppsError::InvalidBetaIndex))
+        }
+    }
+
+    fn set_active_beta(&mut self, beta_name: String) -> Result<bool, Error> {
+        let beta_name = CString::new(beta_name).unwrap_or_default();
+
+        Ok(unsafe {
+            steamworks_sys::SteamAPI_ISteamApps_SetActiveBeta(self.steam_apps, beta_name.as_ptr())
+        })
+    }
+
+    fn set_game_performance_setting(
+        &mut self,
+        setting: MistGamePerformanceSetting,
+    ) -> Result<(), Error> {
+        unsafe {
+            steamworks_sys::SteamAPI_ISteamApps_SetGamePerformanceSetting(
+                self.steam_apps,
+                setting as steamworks_sys::EGamePerformanceSetting,
+            )
+        }
+
+        Ok(())
+    }
+
+    fn set_game_render_resolution(&mut self, width: u32, height: u32) -> Result<(), Error> {
+        unsafe {
+            steamworks_sys::SteamAPI_ISteamApps_SetGameRenderResolution(
+                self.steam_apps,
+                width,
+                height,
+            )
+        }
+
+        Ok(())
+    }
 }

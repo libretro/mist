@@ -27,6 +27,15 @@
 
 #define MIST_MAX_GAMEPADS 16
 
+typedef enum MistGamePerformanceSetting {
+  MistGamePerformanceSetting_NotSet = 0,
+  MistGamePerformanceSetting_Low = 1,
+  MistGamePerformanceSetting_Medium = 2,
+  MistGamePerformanceSetting_High = 3,
+  MistGamePerformanceSetting_Ultra = 4,
+  MistGamePerformanceSetting_Custom = 5,
+} MistGamePerformanceSetting;
+
 typedef enum MistControllerSourceMode {
   MistControllerSourceMode_None = 0,
   MistControllerSourceMode_Dpad = 1,
@@ -1063,6 +1072,51 @@ MistResult mist_steam_apps_mark_content_corrupt(bool missing_files_only);
  * Returns MistResult
  */
 MistResult mist_steam_apps_uninstall_dlc(AppId app_id);
+
+/**
+ * Associate upcoming playtime with the dlc app id, pass 0 to clear the context
+ * Returns MistResult
+ */
+MistResult mist_steam_apps_set_dlc_context(AppId app_id, bool *success);
+
+/**
+ * Get the number of beta branches, including the default "public" branch
+ * Returns MistResult
+ */
+MistResult mist_steam_apps_get_num_betas(int32_t *total,
+                                         int32_t *available,
+                                         int32_t *private_betas);
+
+/**
+ * Get the info for the beta branch by index, flags are EBetaBranchFlags bits from the Steamworks SDK
+ * Returns MistResult
+ */
+MistResult mist_steam_apps_get_beta_info(int32_t beta_index,
+                                         uint32_t *flags,
+                                         uint32_t *build_id,
+                                         char *name,
+                                         uint32_t name_size,
+                                         char *description,
+                                         uint32_t description_size,
+                                         uint32_t *last_updated);
+
+/**
+ * Select the beta branch as active, the game might need to restart so Steam can update to it
+ * Returns MistResult
+ */
+MistResult mist_steam_apps_set_active_beta(const char *beta_name, bool *success);
+
+/**
+ * Report the game performance setting the user has selected
+ * Returns MistResult
+ */
+MistResult mist_steam_apps_set_game_performance_setting(enum MistGamePerformanceSetting setting);
+
+/**
+ * Report the resolution the game is rendering at
+ * Returns MistResult
+ */
+MistResult mist_steam_apps_set_game_render_resolution(uint32_t width, uint32_t height);
 
 /**
  * Clears the rich presence key/value store

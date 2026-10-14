@@ -22,7 +22,8 @@ mist_errors! {
         InvalidString = 20
     },
     SteamApps: 100 {
-        InvalidDlcIndex = 0
+        InvalidDlcIndex = 0,
+        InvalidBetaIndex
     },
     SteamFriends: 105 {
         InvalidRichPresence = 0

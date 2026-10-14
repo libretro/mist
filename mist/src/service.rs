@@ -37,6 +37,12 @@ mist_service!(
         fn install_dlc(app_id: AppId);
         fn mark_content_corrupt(missing_files_only: bool) -> bool;
         fn uninstall_dlc(app_id: AppId);
+        fn set_dlc_context(app_id: AppId) -> bool;
+        fn get_num_betas() -> (i32, i32, i32);
+        fn get_beta_info(beta_index: i32) -> BetaInfo;
+        fn set_active_beta(beta_name: String) -> bool;
+        fn set_game_performance_setting(setting: MistGamePerformanceSetting);
+        fn set_game_render_resolution(width: u32, height: u32);
     }
 
     // ISteamFriends

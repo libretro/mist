@@ -22,7 +22,8 @@ enum {
 };
 
 enum {
-	SteamAppsError_InvalidDlcIndex = 0
+	SteamAppsError_InvalidDlcIndex = 0,
+	SteamAppsError_InvalidBetaIndex
 };
 
 enum {

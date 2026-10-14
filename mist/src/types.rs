@@ -22,6 +22,26 @@ pub struct DlcData {
     pub name: String,
 }
 
+#[derive(Serialize, Deserialize, Eq, PartialEq)]
+pub struct BetaInfo {
+    pub flags: u32,
+    pub build_id: u32,
+    pub name: String,
+    pub description: String,
+    pub last_updated: u32,
+}
+
+#[derive(Copy, Clone, Serialize, Deserialize, Eq, PartialEq)]
+#[repr(C)]
+pub enum MistGamePerformanceSetting {
+    NotSet = 0,
+    Low = 1,
+    Medium = 2,
+    High = 3,
+    Ultra = 4,
+    Custom = 5,
+}
+
 // Steam Input
 #[allow(non_camel_case_types)]
 #[derive(Copy, Clone, Serialize, Deserialize, Eq, PartialEq, Hash)]
