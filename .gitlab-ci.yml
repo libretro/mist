@@ -9,7 +9,7 @@ image: $CI_SERVER_HOST:5050/libretro-steam/rust-build-image:cross
   needs:
     - project: libretro-steam/steamworks
       job: package
-      ref: master
+      ref: v1.53a
       artifacts: true
   script: &build_common_script
     - echo building for $RUST_TARGET
