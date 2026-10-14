@@ -16,6 +16,22 @@ image: $CI_SERVER_HOST:5050/libretro-steam/rust-build-image:cross
     - STEAMWORKS_SDK="$(pwd)/steamworks" cargo build --release --target=$RUST_TARGET --bin mist --features=mist-bin
     - cargo build --release --target=$RUST_TARGET --lib --package mist
 
+build-linux-arm64:
+  image: $CI_SERVER_HOST:5050/libretro-steam/rust-build-image:latest
+  extends: .build-common
+  artifacts:
+    paths:
+    - mist-linux-arm64
+    expire_in: 1 hour
+  variables:
+    RUST_TARGET: aarch64-unknown-linux-gnu
+  script:
+    - *build_common_script
+    - mkdir -p mist-linux-arm64/mist
+    - cp ./target/$RUST_TARGET/release/libmist.so ./mist-linux-arm64
+    - cp ./target/$RUST_TARGET/release/mist ./mist-linux-arm64/mist
+    - cp ./steamworks/redistributable_bin/linuxarm64/libsteam_api.so ./mist-linux-arm64/mist
+
 build-linux-x64:
   image: $CI_SERVER_HOST:5050/libretro-steam/rust-build-image:latest
   extends: .build-common
@@ -96,6 +112,8 @@ package:
   needs:
     - job: build-windows-x64
       artifacts: true
+    - job: build-linux-arm64
+      artifacts: true
     - job: build-linux-x64
       artifacts: true
     - job: build-osx-x64
@@ -112,6 +130,10 @@ package:
     - cargo about generate about.hbs > ./mist-ThirdPartyLicenses.txt
     - rm -rf mist/ && mkdir -p mist/
     # Linux
+    - cp -r ./mist-linux-arm64 ./mist/
+    - cp -r ./include ./mist/mist-linux-arm64
+    - cp ./LICENSE ./mist/mist-linux-arm64/mist/mist-LICENSE.txt
+    - cp ./mist-ThirdPartyLicenses.txt ./mist/mist-linux-arm64/mist/
     - cp -r ./mist-linux-x64 ./mist/
     - cp -r ./include ./mist/mist-linux-x64
     - cp ./LICENSE ./mist/mist-linux-x64/mist/mist-LICENSE.txt
@@ -119,10 +141,10 @@ package:
     # Mac
     - mkdir -p ./mist/mist-osx/mist/
     - cp -r ./include ./mist/mist-osx
-    - llvm-lipo-11 -create -output ./mist/mist-osx/libmist.dylib ./mist-osx-arm64/libmist.dylib ./mist-osx-x64/libmist.dylib
+    - llvm-lipo-19 -create -output ./mist/mist-osx/libmist.dylib ./mist-osx-arm64/libmist.dylib ./mist-osx-x64/libmist.dylib
       # the libsteam_api.dylib is already universal
     - cp ./mist-osx-x64/mist/libsteam_api.dylib ./mist/mist-osx/mist/
-    - llvm-lipo-11 -create -output ./mist/mist-osx/mist/mist ./mist-osx-arm64/mist/mist ./mist-osx-x64/mist/mist
+    - llvm-lipo-19 -create -output ./mist/mist-osx/mist/mist ./mist-osx-arm64/mist/mist ./mist-osx-x64/mist/mist
     - cp ./LICENSE ./mist/mist-osx/mist/mist-LICENSE.txt
     - cp ./mist-ThirdPartyLicenses.txt ./mist/mist-osx/mist/
     # Windows

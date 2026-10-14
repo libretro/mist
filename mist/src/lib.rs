@@ -32,7 +32,7 @@ pub unsafe fn copy_string_out(string: &CString, out: *mut c_char, size: usize) -
     // Also copy null byte
     let copied = (string.as_bytes().len() + 1).min(size as usize);
 
-    std::ptr::copy_nonoverlapping(string.as_ptr() as *mut i8, out, copied);
+    std::ptr::copy_nonoverlapping(string.as_ptr(), out, copied);
 
     copied
 }

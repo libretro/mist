@@ -30,9 +30,13 @@ mist_callbacks!(
 
                 let text_len = unsafe { steamworks_sys::SteamAPI_ISteamUtils_GetEnteredGamepadTextLength(steam_utils) };
 
-                let mut input = String::with_capacity(text_len as usize);
+                let mut input = vec![0u8; text_len as usize];
 
-                unsafe { steamworks_sys::SteamAPI_ISteamUtils_GetEnteredGamepadTextInput(steam_utils, input.as_mut_ptr() as *mut i8, text_len) };
+                unsafe { steamworks_sys::SteamAPI_ISteamUtils_GetEnteredGamepadTextInput(steam_utils, input.as_mut_ptr() as *mut _, text_len) };
+
+                let input = std::ffi::CStr::from_bytes_until_nul(&input)
+                    .map(|text| text.to_string_lossy().into_owned())
+                    .unwrap_or_default();
 
                 server.service().entered_gamepad_text = Some(input);
             })]
