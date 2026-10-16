@@ -36,10 +36,8 @@ impl MistServiceSteamUtils for MistServerService {
         })
     }
     fn is_steam_running_on_steam_deck(&mut self) -> Result<bool, Error> {
-        Ok(unsafe {
-            steamworks_sys::SteamAPI_ISteamUtils_IsRunningOnSteamHardware(self.steam_utils)
-                == steamworks_sys::ESteamHardwareType_k_ESteamHardwareTypeSteamDeck
-        })
+        self.is_running_on_steam_hardware()
+            .map(|h| h != MistSteamHardwareType::None)
     }
     fn set_vr_headset_streaming_enabled(&mut self, enabled: bool) -> Result<(), Error> {
         Ok(unsafe {
